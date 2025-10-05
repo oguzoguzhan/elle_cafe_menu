@@ -1,19 +1,33 @@
+import { ArrowLeft } from 'lucide-react';
 import { Settings } from '../lib/supabase';
 
 interface HeaderProps {
   settings: Settings;
   onLogoClick: () => void;
+  showBackButton?: boolean;
+  onBackClick?: () => void;
 }
 
-export function Header({ settings, onLogoClick }: HeaderProps) {
+export function Header({ settings, onLogoClick, showBackButton = false, onBackClick }: HeaderProps) {
   return (
     <header
-      className="sticky top-0 z-10 shadow-sm flex items-center justify-center"
+      className="sticky top-0 z-10 shadow-sm flex items-center justify-center relative"
       style={{
         backgroundColor: settings.header_bg_color,
         height: `${settings.header_height}px`,
       }}
     >
+      {showBackButton && onBackClick && (
+        <button
+          onClick={onBackClick}
+          className="absolute left-4 flex items-center gap-2 px-3 py-1 rounded hover:bg-black hover:bg-opacity-10 transition-colors"
+          style={{ color: settings.nav_text_color }}
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span style={{ fontSize: `${settings.nav_font_size}px` }}>Geri</span>
+        </button>
+      )}
+
       {settings.header_logo_url ? (
         <button onClick={onLogoClick} className="focus:outline-none">
           <img

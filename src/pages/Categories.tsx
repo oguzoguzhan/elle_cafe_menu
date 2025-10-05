@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
 import { Category, Settings } from '../lib/supabase';
 import { api } from '../lib/api';
 import { Header } from '../components/Header';
@@ -64,7 +63,12 @@ export function Categories({ settings, breadcrumb, onCategorySelect, onBreadcrum
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: settings.categories_bg_color }}>
-      <Header settings={settings} onLogoClick={onLogoClick} />
+      <Header
+        settings={settings}
+        onLogoClick={onLogoClick}
+        showBackButton={isSubcategory}
+        onBackClick={handleBack}
+      />
 
       <div className="shadow-sm" style={{ backgroundColor: settings.nav_bg_color }}>
         <div className="max-w-4xl mx-auto px-4 py-4">
@@ -90,17 +94,6 @@ export function Categories({ settings, breadcrumb, onCategorySelect, onBreadcrum
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6">
-        {isSubcategory && (
-          <button
-            onClick={handleBack}
-            className="flex items-center gap-2 mb-4 px-4 py-2 bg-white rounded-lg shadow hover:shadow-md transition-shadow"
-            style={{ color: settings.nav_text_color }}
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span style={{ fontSize: `${settings.nav_font_size}px` }}>Geri</span>
-          </button>
-        )}
-
         {loading ? (
           <div className="text-center py-12 text-gray-600">Yükleniyor...</div>
         ) : categories.length === 0 ? (
