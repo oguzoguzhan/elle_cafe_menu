@@ -20,8 +20,11 @@ export function Header({ settings, onLogoClick, showBackButton = false, onBackCl
       {showBackButton && onBackClick && (
         <button
           onClick={onBackClick}
-          className="absolute left-4 flex items-center gap-2 px-3 py-1 rounded hover:bg-black hover:bg-opacity-10 transition-colors"
-          style={{ color: settings.nav_text_color }}
+          className="absolute left-4 flex items-center gap-2 px-3 py-1 rounded shadow-sm hover:shadow-md transition-shadow"
+          style={{
+            backgroundColor: settings.back_button_bg_color,
+            color: settings.back_button_text_color
+          }}
         >
           <ArrowLeft className="w-5 h-5" />
           <span style={{ fontSize: `${settings.nav_font_size}px` }}>Geri</span>

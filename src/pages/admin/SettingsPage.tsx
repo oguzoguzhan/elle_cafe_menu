@@ -726,6 +726,52 @@ export function SettingsPage() {
         </div>
       </div>
 
+      <div>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Geri Butonu Ayarları</h2>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Arkaplan Rengi
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="color"
+                value={settings.back_button_bg_color}
+                onChange={(e) => setSettings({ ...settings, back_button_bg_color: e.target.value })}
+                className="h-10 w-20 rounded border border-gray-300"
+              />
+              <input
+                type="text"
+                value={settings.back_button_bg_color}
+                onChange={(e) => setSettings({ ...settings, back_button_bg_color: e.target.value })}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Yazı Rengi
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="color"
+                value={settings.back_button_text_color}
+                onChange={(e) => setSettings({ ...settings, back_button_text_color: e.target.value })}
+                className="h-10 w-20 rounded border border-gray-300"
+              />
+              <input
+                type="text"
+                value={settings.back_button_text_color}
+                onChange={(e) => setSettings({ ...settings, back_button_text_color: e.target.value })}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       {message && (
         <div className={`p-4 rounded-lg ${message.includes('başarıyla') ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
           {message}

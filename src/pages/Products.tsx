@@ -38,6 +38,11 @@ export function Products({ categoryId, breadcrumb, settings, onBreadcrumbClick, 
     return text.substring(0, maxLength) + '...';
   };
 
+  const handleBack = () => {
+    const newBreadcrumb = breadcrumb.slice(0, -1);
+    onBreadcrumbClick(newBreadcrumb);
+  };
+
   const formatPrice = (price: number | null) => {
     if (!price) return null;
     return `₺${price.toFixed(2)}`;
@@ -68,7 +73,12 @@ export function Products({ categoryId, breadcrumb, settings, onBreadcrumbClick, 
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: settings.products_bg_color }}>
-      <Header settings={settings} onLogoClick={onLogoClick} />
+      <Header
+        settings={settings}
+        onLogoClick={onLogoClick}
+        showBackButton={true}
+        onBackClick={handleBack}
+      />
 
       <div className="shadow-sm" style={{ backgroundColor: settings.nav_bg_color }}>
         <div className="max-w-4xl mx-auto px-4 py-4">

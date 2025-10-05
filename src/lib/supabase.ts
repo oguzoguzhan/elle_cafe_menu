@@ -42,6 +42,8 @@ export type Settings = {
   product_description_font_size: number;
   product_price_color: string;
   product_price_font_size: number;
+  back_button_bg_color: string;
+  back_button_text_color: string;
   updated_at: string;
 };
 
