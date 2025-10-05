@@ -113,13 +113,11 @@ export function Products({ categoryId, breadcrumb, settings, onBreadcrumbClick, 
                   className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow text-left flex"
                 >
                   {product.image_url && (
-                    <div className="w-32 h-32 flex-shrink-0 flex items-center justify-center bg-gray-100">
-                      <img
-                        src={product.image_url}
-                        alt={product.name}
-                        className="max-w-full max-h-full object-contain"
-                      />
-                    </div>
+                    <img
+                      src={product.image_url}
+                      alt={product.name}
+                      className="w-32 h-32 object-cover flex-shrink-0"
+                    />
                   )}
                   <div className="p-4 flex-1">
                     <h3
