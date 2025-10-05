@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { Category, Settings } from '../lib/supabase';
 import { api } from '../lib/api';
 import { Header } from '../components/Header';
@@ -48,6 +49,15 @@ export function Categories({ settings, breadcrumb, onCategorySelect, onBreadcrum
     onBreadcrumbUpdate(newBreadcrumb);
   };
 
+  const handleBack = () => {
+    if (breadcrumb.length > 1) {
+      const newBreadcrumb = breadcrumb.slice(0, -1);
+      onBreadcrumbUpdate(newBreadcrumb);
+    }
+  };
+
+  const isSubcategory = breadcrumb.length > 1;
+
   const gridClass = settings.category_grid === 'one'
     ? 'grid-cols-1'
     : 'grid-cols-2';
@@ -80,6 +90,17 @@ export function Categories({ settings, breadcrumb, onCategorySelect, onBreadcrum
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6">
+        {isSubcategory && (
+          <button
+            onClick={handleBack}
+            className="flex items-center gap-2 mb-4 px-4 py-2 bg-white rounded-lg shadow hover:shadow-md transition-shadow"
+            style={{ color: settings.nav_text_color }}
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span style={{ fontSize: `${settings.nav_font_size}px` }}>Geri</span>
+          </button>
+        )}
+
         {loading ? (
           <div className="text-center py-12 text-gray-600">Yükleniyor...</div>
         ) : categories.length === 0 ? (

@@ -48,6 +48,7 @@ function App() {
   }, [view, isAdminAuthenticated]);
 
   const handleEnterMenu = () => {
+    setCategoryBreadcrumb([{ id: null, name: 'Ana Kategoriler' }]);
     setView('categories');
   };
 
