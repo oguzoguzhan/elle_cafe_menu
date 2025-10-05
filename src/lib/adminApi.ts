@@ -1,160 +1,112 @@
-import { supabase, Settings, Category, Product } from './supabase';
+import { Settings, Category, Product } from './api';
 
-const ADMIN_SESSION_KEY = 'admin_session';
+async function apiCall(endpoint: string, options: RequestInit = {}) {
+  const response = await fetch(`/api/${endpoint}`, {
+    ...options,
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Request failed' }));
+    throw new Error(error.error || 'Request failed');
+  }
+
+  return response.json();
+}
 
 export const adminApi = {
   auth: {
     async login(username: string, password: string): Promise<boolean> {
-      const { data: admin, error } = await supabase
-        .from('admins')
-        .select('*')
-        .eq('username', username)
-        .maybeSingle();
-
-      if (error || !admin) {
+      try {
+        await apiCall('auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ username, password }),
+        });
+        return true;
+      } catch {
         return false;
       }
+    },
 
-      const bcrypt = await import('bcryptjs');
-      const isValid = await bcrypt.compare(password, admin.password_hash);
+    async logout(): Promise<void> {
+      await apiCall('auth/logout', { method: 'POST' });
+    },
 
-      if (isValid) {
-        sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({ username, id: admin.id }));
+    async isAuthenticated(): Promise<boolean> {
+      try {
+        await apiCall('auth/session');
         return true;
+      } catch {
+        return false;
       }
-
-      return false;
-    },
-
-    logout() {
-      sessionStorage.removeItem(ADMIN_SESSION_KEY);
-    },
-
-    isAuthenticated(): boolean {
-      return !!sessionStorage.getItem(ADMIN_SESSION_KEY);
     },
   },
 
   settings: {
-    async update(settings: Partial<Settings>): Promise<Settings | null> {
-      const { data: current } = await supabase
-        .from('settings')
-        .select('*')
-        .maybeSingle();
-
-      if (!current) return null;
-
-      const { data, error } = await supabase
-        .from('settings')
-        .update({ ...settings, updated_at: new Date().toISOString() })
-        .eq('id', current.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+    async update(settings: Partial<Settings>): Promise<Settings> {
+      return apiCall('settings', {
+        method: 'PUT',
+        body: JSON.stringify(settings),
+      });
     },
   },
 
   categories: {
-    async getAll(includeInactive = true): Promise<Category[]> {
-      let query = supabase
-        .from('categories')
-        .select('*')
-        .order('sort_order', { ascending: true });
-
-      if (!includeInactive) {
-        query = query.eq('active', true);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
+    async getAll(): Promise<Category[]> {
+      return apiCall('categories');
     },
 
     async create(category: Omit<Category, 'id' | 'created_at' | 'updated_at'>): Promise<Category> {
-      const { data, error } = await supabase
-        .from('categories')
-        .insert(category)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      return apiCall('categories', {
+        method: 'POST',
+        body: JSON.stringify(category),
+      });
     },
 
-    async update(id: string, updates: Partial<Category>): Promise<Category> {
-      const { data, error } = await supabase
-        .from('categories')
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+    async update(id: number, updates: Partial<Category>): Promise<Category> {
+      return apiCall('categories', {
+        method: 'PUT',
+        body: JSON.stringify({ id, ...updates }),
+      });
     },
 
-    async delete(id: string): Promise<void> {
-      const { error } = await supabase
-        .from('categories')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+    async delete(id: number): Promise<void> {
+      await apiCall('categories', {
+        method: 'DELETE',
+        body: JSON.stringify({ id }),
+      });
     },
   },
 
   products: {
-    async getAll(filters?: { categoryId?: string; active?: boolean }): Promise<Product[]> {
-      let query = supabase
-        .from('products')
-        .select('*')
-        .order('sort_order', { ascending: true });
-
-      if (filters?.categoryId) {
-        query = query.eq('category_id', filters.categoryId);
-      }
-
-      if (filters?.active !== undefined) {
-        query = query.eq('active', filters.active);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
+    async getAll(categoryId?: number): Promise<Product[]> {
+      const query = categoryId ? `?category_id=${categoryId}` : '';
+      return apiCall(`products${query}`);
     },
 
     async create(product: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<Product> {
-      const { data, error } = await supabase
-        .from('products')
-        .insert(product)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      return apiCall('products', {
+        method: 'POST',
+        body: JSON.stringify(product),
+      });
     },
 
-    async update(id: string, updates: Partial<Product>): Promise<Product> {
-      const { data, error } = await supabase
-        .from('products')
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+    async update(id: number, updates: Partial<Product>): Promise<Product> {
+      return apiCall('products', {
+        method: 'PUT',
+        body: JSON.stringify({ id, ...updates }),
+      });
     },
 
-    async delete(id: string): Promise<void> {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+    async delete(id: number): Promise<void> {
+      await apiCall('products', {
+        method: 'DELETE',
+        body: JSON.stringify({ id }),
+      });
     },
   },
 };

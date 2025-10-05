@@ -7,6 +7,10 @@ RewriteBase /
 # API Routes
 RewriteRule ^api/upload$ server/upload.php [L,QSA]
 RewriteRule ^api/delete$ server/delete.php [L,QSA]
+RewriteRule ^api/auth/(.+)$ server/auth.php [L,QSA]
+RewriteRule ^api/categories$ server/categories.php [L,QSA]
+RewriteRule ^api/products$ server/products.php [L,QSA]
+RewriteRule ^api/settings$ server/settings.php [L,QSA]
 
 # React Router - redirect all requests to index.html
 RewriteCond %{REQUEST_FILENAME} !-f

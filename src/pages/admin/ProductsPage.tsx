@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, X, Upload } from 'lucide-react';
-import { Product, Category } from '../../lib/supabase';
+import { Product, Category } from '../../lib/api';
 import { adminApi } from '../../lib/adminApi';
 import { uploadImage, deleteImage } from '../../lib/imageUpload';
 
@@ -12,12 +12,11 @@ export function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [filterCategory, setFilterCategory] = useState<string>('');
-  const [filterActive, setFilterActive] = useState<string>('all');
-  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [filterCategory, setFilterCategory] = useState<number | ''>('');
+  const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
   const [formData, setFormData] = useState<ProductForm>({
-    category_id: '',
+    category_id: 0,
     name: '',
     image_url: null,
     description: null,
