@@ -1,0 +1,16 @@
+# Ensure RewriteEngine is on
+RewriteEngine On
+
+# Set the base directory
+RewriteBase /
+
+# API Routes
+RewriteRule ^api/upload$ server/upload.php [L,QSA]
+RewriteRule ^api/delete$ server/delete.php [L,QSA]
+
+# React Router - redirect all requests to index.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/server/
+RewriteCond %{REQUEST_URI} !^/uploads/
+RewriteRule ^(.*)$ index.html [L,QSA]
