@@ -1,0 +1,8 @@
+RewriteEngine On
+RewriteBase /
+
+# Upload endpoint
+RewriteRule ^api/upload$ server/upload.php [L]
+
+# Delete endpoint
+RewriteRule ^api/delete$ server/delete.php [L]

@@ -1,0 +1,17 @@
+# Allow image access
+<FilesMatch "\.(jpg|jpeg|png|gif|webp)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
+
+# Prevent PHP execution
+<FilesMatch "\.php$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Enable hotlink protection (optional)
+# RewriteEngine On
+# RewriteCond %{HTTP_REFERER} !^$
+# RewriteCond %{HTTP_REFERER} !^https?://(www\.)?your-domain\.com [NC]
+# RewriteRule \.(jpg|jpeg|png|gif|webp)$ - [F,L]

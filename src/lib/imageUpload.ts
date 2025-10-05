@@ -1,68 +1,44 @@
-import { supabase } from './supabase';
-
 export type ImageCategory = 'logo' | 'header-logo' | 'kategori' | 'urun';
-
-const getImagePath = (category: ImageCategory, filename: string): string => {
-  switch (category) {
-    case 'logo':
-      return `logos/${filename}`;
-    case 'header-logo':
-      return `logos/${filename}`;
-    case 'kategori':
-      return `kategoriler/${filename}`;
-    case 'urun':
-      return `urunler/${filename}`;
-  }
-};
 
 export const uploadImage = async (
   file: File,
   category: ImageCategory
 ): Promise<string> => {
   const timestamp = Date.now();
-  const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-  const filename = `${timestamp}_${sanitizedName}`;
-  const path = getImagePath(category, filename);
+  const randomNum = Math.round(Math.random() * 1E9);
+  const extension = file.name.split('.').pop() || 'jpg';
+  const filename = `${timestamp}_${randomNum}.${extension}`;
 
-  const { data, error } = await supabase.storage
-    .from('images')
-    .upload(path, file, {
-      cacheControl: '3600',
-      upsert: false
-    });
+  const formData = new FormData();
+  formData.append('image', file);
+  formData.append('filename', filename);
 
-  if (error) {
-    throw new Error(`Image upload failed: ${error.message}`);
+  const response = await fetch('/api/upload', {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Resim yükleme başarısız');
   }
 
-  const { data: urlData } = supabase.storage
-    .from('images')
-    .getPublicUrl(path);
-
-  return urlData.publicUrl;
+  const data = await response.json();
+  return data.url;
 };
 
 export const deleteImage = async (imageUrl: string): Promise<void> => {
   if (!imageUrl) return;
 
   try {
-    const url = new URL(imageUrl);
-    const pathMatch = url.pathname.match(/\/storage\/v1\/object\/public\/images\/(.+)/);
+    const filename = imageUrl.split('/').pop();
+    if (!filename) return;
 
-    if (!pathMatch) {
-      console.warn('Could not parse image path from URL:', imageUrl);
-      return;
-    }
-
-    const path = pathMatch[1];
-
-    const { error } = await supabase.storage
-      .from('images')
-      .remove([path]);
-
-    if (error) {
-      console.warn('Image deletion failed:', error.message);
-    }
+    await fetch('/api/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename }),
+    });
   } catch (error) {
     console.warn('Image deletion error:', error);
   }
