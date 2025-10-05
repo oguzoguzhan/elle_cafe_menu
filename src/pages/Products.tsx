@@ -110,7 +110,7 @@ export function Products({ categoryId, breadcrumb, settings, onBreadcrumbClick, 
                 <button
                   key={product.id}
                   onClick={() => setSelectedProduct(product)}
-                  className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow text-left flex"
+                  className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow text-left flex items-center"
                 >
                   {product.image_url && (
                     <img
