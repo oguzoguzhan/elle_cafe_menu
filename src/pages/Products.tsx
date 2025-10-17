@@ -3,6 +3,7 @@ import { ArrowLeft, X } from 'lucide-react';
 import { Product, Settings } from '../lib/supabase';
 import { api } from '../lib/api';
 import { Header } from '../components/Header';
+import { detectBranchFromUrl } from '../lib/branchDetection';
 
 interface ProductsProps {
   categoryId: string;
@@ -16,15 +17,27 @@ export function Products({ categoryId, breadcrumb, settings, onBreadcrumbClick, 
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentBranchId, setCurrentBranchId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadProducts();
-  }, [categoryId]);
+    detectBranch();
+  }, []);
+
+  useEffect(() => {
+    if (currentBranchId !== undefined) {
+      loadProducts();
+    }
+  }, [categoryId, currentBranchId]);
+
+  const detectBranch = async () => {
+    const branchId = await detectBranchFromUrl();
+    setCurrentBranchId(branchId);
+  };
 
   const loadProducts = async () => {
     setLoading(true);
     try {
-      const data = await api.products.getByCategoryId(categoryId);
+      const data = await api.products.getByCategoryId(categoryId, currentBranchId || undefined);
       setProducts(data);
     } catch (error) {
       console.error('Error loading products:', error);

@@ -50,6 +50,7 @@ export type Settings = {
 export type Branch = {
   id: string;
   name: string;
+  subdomain: string | null;
   sort_order: number;
   created_at: string;
 };

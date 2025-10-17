@@ -10,6 +10,7 @@ export function BranchesPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
+    subdomain: '',
     sort_order: 0,
   });
   const [message, setMessage] = useState('');
@@ -34,6 +35,7 @@ export function BranchesPage() {
     const maxSortOrder = Math.max(0, ...branches.map(b => b.sort_order));
     setFormData({
       name: '',
+      subdomain: '',
       sort_order: maxSortOrder + 1,
     });
     setIsAdding(true);
@@ -42,6 +44,7 @@ export function BranchesPage() {
   const handleEdit = (branch: Branch) => {
     setFormData({
       name: branch.name,
+      subdomain: branch.subdomain || '',
       sort_order: branch.sort_order,
     });
     setEditingId(branch.id);
@@ -51,7 +54,7 @@ export function BranchesPage() {
   const handleCancel = () => {
     setIsAdding(false);
     setEditingId(null);
-    setFormData({ name: '', sort_order: 0 });
+    setFormData({ name: '', subdomain: '', sort_order: 0 });
   };
 
   const handleSave = async () => {
@@ -61,19 +64,29 @@ export function BranchesPage() {
     }
 
     try {
+      const dataToSave = {
+        name: formData.name,
+        subdomain: formData.subdomain.trim() || null,
+        sort_order: formData.sort_order,
+      };
+
       if (isAdding) {
-        await adminApi.branches.create(formData);
+        await adminApi.branches.create(dataToSave);
         setMessage('Şube eklendi');
       } else if (editingId) {
-        await adminApi.branches.update(editingId, formData);
+        await adminApi.branches.update(editingId, dataToSave);
         setMessage('Şube güncellendi');
       }
       await loadBranches();
       handleCancel();
       setTimeout(() => setMessage(''), 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving branch:', error);
-      setMessage('Kaydetme hatası');
+      if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
+        setMessage('Bu subdomain zaten kullanılıyor');
+      } else {
+        setMessage('Kaydetme hatası');
+      }
     }
   };
 
@@ -137,6 +150,22 @@ export function BranchesPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                Subdomain / Adres
+              </label>
+              <input
+                type="text"
+                value={formData.subdomain}
+                onChange={(e) => setFormData({ ...formData, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="örnek: kadikoy, besiktas"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Bu subdomain'den gelen ziyaretçiler sadece bu şubeye ait menüleri görür. Boş bırakılırsa tüm şubeler için geçerli olur.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Sıra
               </label>
               <input
@@ -177,6 +206,9 @@ export function BranchesPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Şube Adı
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Subdomain
+              </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 İşlemler
               </th>
@@ -185,7 +217,7 @@ export function BranchesPage() {
           <tbody className="bg-white divide-y divide-gray-200">
             {branches.length === 0 ? (
               <tr>
-                <td colSpan={3} className="px-6 py-4 text-center text-gray-500">
+                <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
                   Henüz şube eklenmemiş
                 </td>
               </tr>
@@ -197,6 +229,9 @@ export function BranchesPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {branch.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {branch.subdomain || <span className="text-gray-400 italic">Tüm şubeler</span>}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button

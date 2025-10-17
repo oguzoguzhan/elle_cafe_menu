@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Category, Settings } from '../lib/supabase';
 import { api } from '../lib/api';
 import { Header } from '../components/Header';
+import { detectBranchFromUrl } from '../lib/branchDetection';
 
 interface CategoriesProps {
   settings: Settings;
@@ -14,16 +15,26 @@ interface CategoriesProps {
 export function Categories({ settings, breadcrumb, onCategorySelect, onBreadcrumbUpdate, onLogoClick }: CategoriesProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentBranchId, setCurrentBranchId] = useState<string | null>(null);
+
+  useEffect(() => {
+    detectBranch();
+  }, []);
 
   useEffect(() => {
     const parentId = breadcrumb[breadcrumb.length - 1].id;
     loadCategories(parentId);
-  }, [breadcrumb]);
+  }, [breadcrumb, currentBranchId]);
+
+  const detectBranch = async () => {
+    const branchId = await detectBranchFromUrl();
+    setCurrentBranchId(branchId);
+  };
 
   const loadCategories = async (parentId: string | null) => {
     setLoading(true);
     try {
-      const data = await api.categories.getAll(parentId);
+      const data = await api.categories.getAll(parentId, currentBranchId || undefined);
       setCategories(data);
     } catch (error) {
       console.error('Error loading categories:', error);
