@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+
 export type ImageCategory = 'logo' | 'header-logo' | 'kategori' | 'urun';
 
 export const uploadImage = async (
@@ -7,49 +9,40 @@ export const uploadImage = async (
   const timestamp = Date.now();
   const randomNum = Math.round(Math.random() * 1E9);
   const extension = file.name.split('.').pop() || 'jpg';
-  const filename = `${timestamp}_${randomNum}.${extension}`;
+  const filename = `${category}/${timestamp}_${randomNum}.${extension}`;
 
-  const formData = new FormData();
-  formData.append('image', file);
-  formData.append('filename', filename);
+  const { data, error } = await supabase.storage
+    .from('images')
+    .upload(filename, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
 
-  const response = await fetch('/api/upload', {
-    method: 'POST',
-    body: formData,
-  });
-
-  if (!response.ok) {
-    let errorMessage = 'Resim yükleme başarısız';
-    try {
-      const text = await response.text();
-      try {
-        const error = JSON.parse(text);
-        errorMessage = error.message || error.error || errorMessage;
-      } catch {
-        errorMessage = text || errorMessage;
-      }
-    } catch (e) {
-      errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-    }
-    throw new Error(errorMessage);
+  if (error) {
+    throw new Error(error.message || 'Resim yükleme başarısız');
   }
 
-  const data = await response.json();
-  return data.url;
+  const { data: urlData } = supabase.storage
+    .from('images')
+    .getPublicUrl(data.path);
+
+  return urlData.publicUrl;
 };
 
 export const deleteImage = async (imageUrl: string): Promise<void> => {
   if (!imageUrl) return;
 
   try {
-    const filename = imageUrl.split('/').pop();
+    const url = new URL(imageUrl);
+    const pathParts = url.pathname.split('/images/');
+    if (pathParts.length < 2) return;
+
+    const filename = pathParts[1];
     if (!filename) return;
 
-    await fetch('/api/delete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filename }),
-    });
+    await supabase.storage
+      .from('images')
+      .remove([filename]);
   } catch (error) {
     console.warn('Image deletion error:', error);
   }
