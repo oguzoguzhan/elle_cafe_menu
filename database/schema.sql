@@ -1,8 +1,7 @@
 -- MySQL Database Schema for Product Catalog Application
 
-CREATE DATABASE IF NOT EXISTS evteksti_dbadi DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-USE evteksti_dbadi;
+-- Database is already created as evteksti_qrdb
+USE evteksti_qrdb;
 
 -- Admin users table
 CREATE TABLE IF NOT EXISTS admin_users (
@@ -72,9 +71,10 @@ CREATE TABLE IF NOT EXISTS settings (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insert default admin user (username: admin, password: admin123)
--- Password hash for 'admin123' using bcrypt
+-- Password hash for 'admin123' using bcrypt (hash: $2a$10$N9qo8uLOickgx2ZMRZoMye7AEHQ6VKxSJKxqGcPFLLOhp3PHQM3XO)
 INSERT INTO admin_users (username, password_hash) VALUES
-('admin', '$2a$10$rB8UqKXqQVYX5KZZqKZZqe3KZqKZqKZqKZqKZqKZqKZqKZqKZqKZ.');
+('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMye7AEHQ6VKxSJKxqGcPFLLOhp3PHQM3XO')
+ON DUPLICATE KEY UPDATE username=username;
 
 -- Insert default settings
 INSERT INTO settings (setting_key, setting_value) VALUES
