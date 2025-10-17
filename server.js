@@ -3,15 +3,6 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import authRoutes from './server/routes/auth.js';
-import categoriesRoutes from './server/routes/categories.js';
-import productsRoutes from './server/routes/products.js';
-import settingsRoutes from './server/routes/settings.js';
-import branchesRoutes from './server/routes/branches.js';
-
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -52,20 +43,24 @@ const upload = multer({
   }
 });
 
-// Middleware
-app.use(cors());
+// CORS middleware
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+// Parse JSON bodies
 app.use(express.json());
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'dist')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/categories', categoriesRoutes);
-app.use('/api/products', productsRoutes);
-app.use('/api/settings', settingsRoutes);
-app.use('/api/branches', branchesRoutes);
 
 // Upload endpoint
 app.post('/api/upload', upload.single('image'), (req, res) => {

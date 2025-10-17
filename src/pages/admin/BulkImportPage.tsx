@@ -18,21 +18,25 @@ export function BulkImportPage() {
   const handleExport = async () => {
     setLoading(true);
     try {
-      const [products, categories] = await Promise.all([
+      const [products, categories, branches] = await Promise.all([
         adminApi.products.getAll(),
         adminApi.categories.getAll(),
+        adminApi.branches.getAll(),
       ]);
 
       const categoryMap = new Map(categories.map(c => [c.id, c]));
+      const branchMap = new Map(branches.map(b => [b.id, b]));
 
       const data = products.map(product => {
         const category = categoryMap.get(product.category_id);
         const parentCategory = category?.parent_id
           ? categoryMap.get(category.parent_id)
           : null;
+        const branch = product.branch_id ? branchMap.get(product.branch_id) : null;
 
         return {
           'ID': product.id,
+          'Şube': branch?.name || 'Tüm Şubeler',
           'Kategori': parentCategory?.name || category?.name || '',
           'Alt Kategori': parentCategory ? category?.name : '',
           'Ürün Adı': product.name,
@@ -54,6 +58,7 @@ export function BulkImportPage() {
 
       const colWidths = [
         { wch: 36 },
+        { wch: 20 },
         { wch: 20 },
         { wch: 20 },
         { wch: 30 },
@@ -104,8 +109,12 @@ export function BulkImportPage() {
         await Promise.all(allProducts.map(p => adminApi.products.delete(p.id)));
       }
 
-      const categories = await adminApi.categories.getAll();
+      const [categories, branches] = await Promise.all([
+        adminApi.categories.getAll(),
+        adminApi.branches.getAll(),
+      ]);
       const categoryMap = new Map(categories.map(c => [c.name.toLowerCase(), c]));
+      const branchMap = new Map(branches.map(b => [b.name.toLowerCase(), b]));
 
       let successCount = 0;
       let errorCount = 0;
@@ -114,6 +123,7 @@ export function BulkImportPage() {
 
       for (const row of jsonData) {
         try {
+          const branchName = (row['Şube'] || '').toString().trim();
           const mainCategoryName = (row['Kategori'] || '').toString().trim();
           const subCategoryName = (row['Alt Kategori'] || '').toString().trim();
 
@@ -121,6 +131,14 @@ export function BulkImportPage() {
             errorCount++;
             errors.push(`Satır atlandı: Kategori ve Ürün Adı zorunludur`);
             continue;
+          }
+
+          let branchId: string | null = null;
+          if (branchName && branchName !== 'Tüm Şubeler') {
+            const branch = branchMap.get(branchName.toLowerCase());
+            if (branch) {
+              branchId = branch.id;
+            }
           }
 
           let targetCategory = categoryMap.get(mainCategoryName.toLowerCase());
@@ -132,7 +150,7 @@ export function BulkImportPage() {
               parent_id: null,
               sort_order: categories.length + 1,
               active: true,
-            });
+            }, []);
             categoryMap.set(mainCategoryName.toLowerCase(), targetCategory);
           }
 
@@ -151,7 +169,7 @@ export function BulkImportPage() {
                 parent_id: targetCategory.id,
                 sort_order: categories.length + 1,
                 active: true,
-              });
+              }, []);
               categories.push(subCategory);
             }
 
@@ -177,6 +195,7 @@ export function BulkImportPage() {
 
           const productData = {
             category_id: categoryId,
+            branch_id: branchId,
             name: row['Ürün Adı'].toString().trim(),
             description: row['Açıklama'] ? row['Açıklama'].toString() : null,
             warning: row['Uyarı'] ? row['Uyarı'].toString() : null,
@@ -256,6 +275,7 @@ export function BulkImportPage() {
             <p className="font-semibold mb-2">Excel Formatı:</p>
             <ul className="list-disc list-inside space-y-1">
               <li>ID (güncellemeler için, yeni kayıtlarda boş bırakın)</li>
+              <li>Şube (opsiyonel) - Şube adı veya "Tüm Şubeler"</li>
               <li>Kategori (zorunlu) - Ana kategori adı</li>
               <li>Alt Kategori (opsiyonel) - Alt kategori varsa</li>
               <li>Ürün Adı (zorunlu)</li>

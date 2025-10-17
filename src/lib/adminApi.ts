@@ -1,194 +1,247 @@
-import { Category, Product, Settings, Branch } from './api';
+import { supabase, Settings, Category, Product, Branch } from './supabase';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 const ADMIN_SESSION_KEY = 'admin_session';
-const ADMIN_TOKEN_KEY = 'admin_token';
-
-class ApiError extends Error {
-  constructor(public status: number, message: string) {
-    super(message);
-    this.name = 'ApiError';
-  }
-}
-
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'An error occurred' }));
-    throw new ApiError(response.status, error.error || error.message || 'An error occurred');
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return response.json();
-}
-
-function getAuthHeaders(): HeadersInit {
-  const token = sessionStorage.getItem(ADMIN_TOKEN_KEY);
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-  };
-}
 
 export const adminApi = {
   auth: {
     async login(username: string, password: string): Promise<boolean> {
-      try {
-        const response = await fetch(`${API_URL}/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
-        });
+      const email = `${username}@admin.local`;
 
-        const data = await handleResponse<{ token: string; user: { id: number; username: string } }>(response);
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-        sessionStorage.setItem(ADMIN_TOKEN_KEY, data.token);
-        sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(data.user));
-        return true;
-      } catch {
+      if (error) {
         return false;
       }
+
+      sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({ username }));
+      return true;
     },
 
     async logout() {
-      sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+      await supabase.auth.signOut();
       sessionStorage.removeItem(ADMIN_SESSION_KEY);
     },
 
     async isAuthenticated(): Promise<boolean> {
-      return !!sessionStorage.getItem(ADMIN_TOKEN_KEY);
+      const { data } = await supabase.auth.getSession();
+      return !!data.session && !!sessionStorage.getItem(ADMIN_SESSION_KEY);
     },
   },
 
   settings: {
-    async get(branchId?: number): Promise<Settings> {
-      const url = branchId
-        ? `${API_URL}/settings?branch_id=${branchId}`
-        : `${API_URL}/settings`;
-      const response = await fetch(url, { headers: getAuthHeaders() });
-      return handleResponse<Settings>(response);
-    },
+    async update(settings: Partial<Settings>): Promise<Settings | null> {
+      const { data: current } = await supabase
+        .from('settings')
+        .select('*')
+        .maybeSingle();
 
-    async update(settings: Partial<Settings>, branchId?: number): Promise<Settings> {
-      const url = branchId
-        ? `${API_URL}/settings?branch_id=${branchId}`
-        : `${API_URL}/settings`;
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(settings)
-      });
-      return handleResponse<Settings>(response);
-    },
-  },
+      if (!current) return null;
 
-  categories: {
-    async getAll(branchId?: number): Promise<Category[]> {
-      const url = branchId
-        ? `${API_URL}/categories?branch_id=${branchId}`
-        : `${API_URL}/categories`;
-      const response = await fetch(url, { headers: getAuthHeaders() });
-      return handleResponse<Category[]>(response);
-    },
+      const { data, error } = await supabase
+        .from('settings')
+        .update({ ...settings, updated_at: new Date().toISOString() })
+        .eq('id', current.id)
+        .select()
+        .single();
 
-    async create(category: Omit<Category, 'id' | 'created_at' | 'updated_at'>): Promise<Category> {
-      const response = await fetch(`${API_URL}/categories`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(category)
-      });
-      return handleResponse<Category>(response);
-    },
-
-    async update(id: number, updates: Partial<Category>): Promise<Category> {
-      const response = await fetch(`${API_URL}/categories/${id}`, {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(updates)
-      });
-      return handleResponse<Category>(response);
-    },
-
-    async delete(id: number): Promise<void> {
-      const response = await fetch(`${API_URL}/categories/${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      });
-      return handleResponse<void>(response);
-    },
-  },
-
-  products: {
-    async getAll(categoryId?: number, branchId?: number): Promise<Product[]> {
-      let url = `${API_URL}/products?`;
-      const params = [];
-      if (categoryId) params.push(`category_id=${categoryId}`);
-      if (branchId) params.push(`branch_id=${branchId}`);
-      url += params.join('&');
-
-      const response = await fetch(url, { headers: getAuthHeaders() });
-      return handleResponse<Product[]>(response);
-    },
-
-    async create(product: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<Product> {
-      const response = await fetch(`${API_URL}/products`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(product)
-      });
-      return handleResponse<Product>(response);
-    },
-
-    async update(id: number, updates: Partial<Product>): Promise<Product> {
-      const response = await fetch(`${API_URL}/products/${id}`, {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(updates)
-      });
-      return handleResponse<Product>(response);
-    },
-
-    async delete(id: number): Promise<void> {
-      const response = await fetch(`${API_URL}/products/${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      });
-      return handleResponse<void>(response);
+      if (error) throw error;
+      return data;
     },
   },
 
   branches: {
     async getAll(): Promise<Branch[]> {
-      const response = await fetch(`${API_URL}/branches`, { headers: getAuthHeaders() });
-      return handleResponse<Branch[]>(response);
+      const { data, error } = await supabase
+        .from('branches')
+        .select('*')
+        .order('sort_order', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
     },
 
-    async create(branch: Omit<Branch, 'id' | 'created_at' | 'updated_at'>): Promise<Branch> {
-      const response = await fetch(`${API_URL}/branches`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(branch)
-      });
-      return handleResponse<Branch>(response);
+    async create(branch: Omit<Branch, 'id' | 'created_at'>): Promise<Branch> {
+      const { data, error } = await supabase
+        .from('branches')
+        .insert(branch)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
     },
 
-    async update(id: number, updates: Partial<Branch>): Promise<Branch> {
-      const response = await fetch(`${API_URL}/branches/${id}`, {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(updates)
-      });
-      return handleResponse<Branch>(response);
+    async update(id: string, updates: Partial<Branch>): Promise<Branch> {
+      const { data, error } = await supabase
+        .from('branches')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
     },
 
-    async delete(id: number): Promise<void> {
-      const response = await fetch(`${API_URL}/branches/${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      });
-      return handleResponse<void>(response);
+    async delete(id: string): Promise<void> {
+      const { error } = await supabase
+        .from('branches')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+  },
+
+  categories: {
+    async getAll(includeInactive = true): Promise<Category[]> {
+      let query = supabase
+        .from('categories')
+        .select('*')
+        .order('sort_order', { ascending: true });
+
+      if (!includeInactive) {
+        query = query.eq('active', true);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      const categories = data || [];
+
+      for (const category of categories) {
+        const { data: branchData } = await supabase
+          .from('category_branches')
+          .select('branch_id')
+          .eq('category_id', category.id);
+
+        category.branch_ids = branchData?.map(cb => cb.branch_id) || [];
+      }
+
+      return categories;
+    },
+
+    async create(category: Omit<Category, 'id' | 'created_at' | 'updated_at'>, branchIds: string[]): Promise<Category> {
+      const { branch_ids, ...categoryData } = category;
+
+      const { data, error } = await supabase
+        .from('categories')
+        .insert(categoryData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (branchIds.length > 0) {
+        const branchEntries = branchIds.map(branch_id => ({
+          category_id: data.id,
+          branch_id,
+        }));
+
+        await supabase
+          .from('category_branches')
+          .insert(branchEntries);
+      }
+
+      return data;
+    },
+
+    async update(id: string, updates: Partial<Category>, branchIds?: string[]): Promise<Category> {
+      const { branch_ids, ...categoryUpdates } = updates;
+
+      const { data, error } = await supabase
+        .from('categories')
+        .update({ ...categoryUpdates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (branchIds !== undefined) {
+        await supabase
+          .from('category_branches')
+          .delete()
+          .eq('category_id', id);
+
+        if (branchIds.length > 0) {
+          const branchEntries = branchIds.map(branch_id => ({
+            category_id: id,
+            branch_id,
+          }));
+
+          await supabase
+            .from('category_branches')
+            .insert(branchEntries);
+        }
+      }
+
+      return data;
+    },
+
+    async delete(id: string): Promise<void> {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+  },
+
+  products: {
+    async getAll(filters?: { categoryId?: string; active?: boolean }): Promise<Product[]> {
+      let query = supabase
+        .from('products')
+        .select('*')
+        .order('sort_order', { ascending: true });
+
+      if (filters?.categoryId) {
+        query = query.eq('category_id', filters.categoryId);
+      }
+
+      if (filters?.active !== undefined) {
+        query = query.eq('active', filters.active);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+
+    async create(product: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<Product> {
+      const { data, error } = await supabase
+        .from('products')
+        .insert(product)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+
+    async update(id: string, updates: Partial<Product>): Promise<Product> {
+      const { data, error } = await supabase
+        .from('products')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+
+    async delete(id: string): Promise<void> {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
     },
   },
 };

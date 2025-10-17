@@ -1,105 +1,105 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-
-export interface Category {
-  id: number;
-  name: string;
-  sort_order: number;
-  branch_id?: number | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Product {
-  id: number;
-  category_id: number;
-  name: string;
-  price: number;
-  image_url?: string | null;
-  warning_text?: string | null;
-  sort_order: number;
-  branch_id?: number | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Settings {
-  [key: string]: string;
-}
-
-export interface Branch {
-  id: number;
-  name: string;
-  subdomain: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-class ApiError extends Error {
-  constructor(public status: number, message: string) {
-    super(message);
-    this.name = 'ApiError';
-  }
-}
-
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'An error occurred' }));
-    throw new ApiError(response.status, error.error || error.message || 'An error occurred');
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return response.json();
-}
+import { supabase, Settings, Category, Product, Branch } from './supabase';
 
 export const api = {
-  async getCategories(branchId?: number): Promise<Category[]> {
-    const url = branchId
-      ? `${API_URL}/categories?branch_id=${branchId}`
-      : `${API_URL}/categories`;
-    const response = await fetch(url);
-    return handleResponse<Category[]>(response);
+  settings: {
+    async get(): Promise<Settings | null> {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('*')
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
   },
 
-  async getCategory(id: number): Promise<Category> {
-    const response = await fetch(`${API_URL}/categories/${id}`);
-    return handleResponse<Category>(response);
+  branches: {
+    async getAll(): Promise<Branch[]> {
+      const { data, error } = await supabase
+        .from('branches')
+        .select('*')
+        .order('sort_order', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    },
   },
 
-  async getProducts(categoryId?: number, branchId?: number): Promise<Product[]> {
-    let url = `${API_URL}/products?`;
-    const params = [];
-    if (categoryId) params.push(`category_id=${categoryId}`);
-    if (branchId) params.push(`branch_id=${branchId}`);
-    url += params.join('&');
+  categories: {
+    async getAll(parentId?: string | null, branchId?: string): Promise<Category[]> {
+      let query = supabase
+        .from('categories')
+        .select('*')
+        .eq('active', true)
+        .order('sort_order', { ascending: true });
 
-    const response = await fetch(url);
-    return handleResponse<Product[]>(response);
+      if (parentId === null) {
+        query = query.is('parent_id', null);
+      } else if (parentId) {
+        query = query.eq('parent_id', parentId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      let categories = data || [];
+
+      if (branchId) {
+        const { data: branchData, error: branchError } = await supabase
+          .from('category_branches')
+          .select('category_id')
+          .eq('branch_id', branchId);
+
+        if (branchError) throw branchError;
+
+        const categoryIds = new Set(branchData?.map(cb => cb.category_id) || []);
+        categories = categories.filter(c => categoryIds.has(c.id));
+      }
+
+      return categories;
+    },
+
+    async hasSubcategories(categoryId: string): Promise<boolean> {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('parent_id', categoryId)
+        .eq('active', true)
+        .limit(1);
+
+      if (error) throw error;
+      return (data?.length || 0) > 0;
+    },
   },
 
-  async getProduct(id: number): Promise<Product> {
-    const response = await fetch(`${API_URL}/products/${id}`);
-    return handleResponse<Product>(response);
-  },
+  products: {
+    async getByCategoryId(categoryId: string, branchId?: string): Promise<Product[]> {
+      let query = supabase
+        .from('products')
+        .select('*')
+        .eq('category_id', categoryId)
+        .eq('active', true)
+        .order('sort_order', { ascending: true });
 
-  async getSettings(branchId?: number): Promise<Settings> {
-    const url = branchId
-      ? `${API_URL}/settings?branch_id=${branchId}`
-      : `${API_URL}/settings`;
-    const response = await fetch(url);
-    return handleResponse<Settings>(response);
-  },
+      if (branchId) {
+        query = query.eq('branch_id', branchId);
+      }
 
-  async getBranches(): Promise<Branch[]> {
-    const response = await fetch(`${API_URL}/branches`);
-    return handleResponse<Branch[]>(response);
-  },
+      const { data, error } = await query;
 
-  async getBranchBySubdomain(subdomain: string): Promise<Branch> {
-    const response = await fetch(`${API_URL}/branches/by-subdomain/${subdomain}`);
-    return handleResponse<Branch>(response);
-  }
+      if (error) throw error;
+      return data || [];
+    },
+
+    async getById(id: string): Promise<Product | null> {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+  },
 };

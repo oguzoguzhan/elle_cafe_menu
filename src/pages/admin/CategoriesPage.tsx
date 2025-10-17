@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, X, Upload } from 'lucide-react';
-import { Category } from '../../lib/supabase';
+import { Category, Branch } from '../../lib/supabase';
 import { adminApi } from '../../lib/adminApi';
 import { uploadImage, deleteImage } from '../../lib/imageUpload';
 
@@ -8,10 +8,12 @@ type CategoryForm = Omit<Category, 'id' | 'created_at' | 'updated_at'>;
 
 export function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
   const [formData, setFormData] = useState<CategoryForm>({
     name: '',
     image_url: null,
@@ -22,6 +24,7 @@ export function CategoriesPage() {
 
   useEffect(() => {
     loadCategories();
+    loadBranches();
   }, []);
 
   const loadCategories = async () => {
@@ -33,6 +36,15 @@ export function CategoriesPage() {
       console.error('Error loading categories:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadBranches = async () => {
+    try {
+      const data = await adminApi.branches.getAll();
+      setBranches(data);
+    } catch (error) {
+      console.error('Error loading branches:', error);
     }
   };
 
@@ -48,9 +60,9 @@ export function CategoriesPage() {
       }
 
       if (editingId) {
-        await adminApi.categories.update(editingId, dataToSave);
+        await adminApi.categories.update(editingId, dataToSave, selectedBranches);
       } else {
-        await adminApi.categories.create(dataToSave);
+        await adminApi.categories.create(dataToSave, selectedBranches);
       }
       await loadCategories();
       handleCloseModal();
@@ -69,6 +81,7 @@ export function CategoriesPage() {
       sort_order: category.sort_order,
       active: category.active,
     });
+    setSelectedBranches(category.branch_ids || []);
     setShowModal(true);
   };
 
@@ -124,6 +137,7 @@ export function CategoriesPage() {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingId(null);
+    setSelectedBranches([]);
     setFormData({
       name: '',
       image_url: null,
@@ -131,6 +145,14 @@ export function CategoriesPage() {
       sort_order: 0,
       active: true,
     });
+  };
+
+  const handleBranchToggle = (branchId: string) => {
+    setSelectedBranches(prev =>
+      prev.includes(branchId)
+        ? prev.filter(id => id !== branchId)
+        : [...prev, branchId]
+    );
   };
 
   const getParentCategories = () => {
@@ -186,6 +208,14 @@ export function CategoriesPage() {
                     <span className={category.active ? 'text-green-600' : 'text-red-600'}>
                       {category.active ? 'Aktif' : 'Pasif'}
                     </span>
+                    {category.branch_ids && category.branch_ids.length > 0 && (
+                      <>
+                        <span>•</span>
+                        <span className="text-blue-600">
+                          {category.branch_ids.length} Şube
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -225,6 +255,14 @@ export function CategoriesPage() {
                           <span className={child.active ? 'text-green-600' : 'text-red-600'}>
                             {child.active ? 'Aktif' : 'Pasif'}
                           </span>
+                          {child.branch_ids && child.branch_ids.length > 0 && (
+                            <>
+                              <span>•</span>
+                              <span className="text-blue-600">
+                                {child.branch_ids.length} Şube
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -343,6 +381,32 @@ export function CategoriesPage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                   min="0"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Şubeler
+                </label>
+                <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-3">
+                  {branches.length === 0 ? (
+                    <p className="text-sm text-gray-500">Henüz şube eklenmemiş</p>
+                  ) : (
+                    branches.map(branch => (
+                      <div key={branch.id} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id={`branch-${branch.id}`}
+                          checked={selectedBranches.includes(branch.id)}
+                          onChange={() => handleBranchToggle(branch.id)}
+                          className="w-4 h-4 text-blue-600 rounded"
+                        />
+                        <label htmlFor={`branch-${branch.id}`} className="text-sm text-gray-700">
+                          {branch.name}
+                        </label>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center gap-2">

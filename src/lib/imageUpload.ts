@@ -1,41 +1,48 @@
-export type ImageCategory = 'logo' | 'header-logo' | 'kategori' | 'urun';
+import { supabase } from './supabase';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+export type ImageCategory = 'logo' | 'header-logo' | 'kategori' | 'urun';
 
 export const uploadImage = async (
   file: File,
   category: ImageCategory
 ): Promise<string> => {
-  const formData = new FormData();
-  formData.append('image', file);
-  formData.append('filename', `${category}_${Date.now()}_${file.name}`);
+  const timestamp = Date.now();
+  const randomNum = Math.round(Math.random() * 1E9);
+  const extension = file.name.split('.').pop() || 'jpg';
+  const filename = `${category}/${timestamp}_${randomNum}.${extension}`;
 
-  const response = await fetch(`${API_URL}/upload`, {
-    method: 'POST',
-    body: formData
-  });
+  const { data, error } = await supabase.storage
+    .from('images')
+    .upload(filename, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
 
-  if (!response.ok) {
-    throw new Error('Resim yükleme başarısız');
+  if (error) {
+    throw new Error(error.message || 'Resim yükleme başarısız');
   }
 
-  const data = await response.json();
-  return data.url;
+  const { data: urlData } = supabase.storage
+    .from('images')
+    .getPublicUrl(data.path);
+
+  return urlData.publicUrl;
 };
 
 export const deleteImage = async (imageUrl: string): Promise<void> => {
   if (!imageUrl) return;
 
   try {
-    const response = await fetch(`${API_URL}/delete`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: imageUrl })
-    });
+    const url = new URL(imageUrl);
+    const pathParts = url.pathname.split('/images/');
+    if (pathParts.length < 2) return;
 
-    if (!response.ok) {
-      console.warn('Image deletion failed');
-    }
+    const filename = pathParts[1];
+    if (!filename) return;
+
+    await supabase.storage
+      .from('images')
+      .remove([filename]);
   } catch (error) {
     console.warn('Image deletion error:', error);
   }
