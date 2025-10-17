@@ -32,7 +32,11 @@ export const api = {
 
       let categories = data || [];
 
-      if (branchId && categories.length > 0) {
+      if (!branchId) {
+        return categories;
+      }
+
+      if (categories.length > 0) {
         const categoryIds = categories.map(c => c.id);
         const { data: branchData } = await supabase
           .from('category_branches')
@@ -56,9 +60,6 @@ export const api = {
         categories = categories.filter(cat =>
           !categoriesWithBranches.has(cat.id) || branchCategoryIds.has(cat.id)
         );
-      } else if (!branchId && categories.length > 0) {
-        // branchId null ise, tüm kategorileri göster
-        return categories;
       }
 
       return categories;
@@ -90,7 +91,11 @@ export const api = {
 
       let products = data || [];
 
-      if (branchId && products.length > 0) {
+      if (!branchId) {
+        return products;
+      }
+
+      if (products.length > 0) {
         const productIds = products.map(p => p.id);
         const { data: branchData } = await supabase
           .from('product_branches')
@@ -110,9 +115,6 @@ export const api = {
         products = products.filter(prod =>
           !productsWithBranches.has(prod.id) || branchProductIds.has(prod.id)
         );
-      } else if (!branchId && products.length > 0) {
-        // branchId null ise, tüm ürünleri göster
-        return products;
       }
 
       return products;
