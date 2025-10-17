@@ -52,11 +52,20 @@ export type Category = {
   name: string;
   image_url: string | null;
   parent_id: string | null;
-  branch_id: string | null;
   sort_order: number;
   active: boolean;
   created_at: string;
   updated_at: string;
+};
+
+export type CategoryBranch = {
+  category_id: string;
+  branch_id: string;
+};
+
+export type ProductBranch = {
+  product_id: string;
+  branch_id: string;
 };
 
 export type Product = {
@@ -89,4 +98,12 @@ export type Branch = {
   subdomain: string | null;
   sort_order: number;
   created_at: string;
+};
+
+export type CategoryWithBranches = Category & {
+  branch_ids?: string[];
+};
+
+export type ProductWithBranches = Product & {
+  branch_ids?: string[];
 };

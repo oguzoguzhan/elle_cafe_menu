@@ -79,11 +79,6 @@ export function Login({ onLogin }: LoginProps) {
           </button>
         </form>
 
-        <div className="mt-6 text-sm text-gray-600 text-center">
-          <p>Admin giriş bilgileri:</p>
-          <p>Kullanıcı: <strong>admin</strong></p>
-          <p>Şifre: <strong>123456</strong></p>
-        </div>
       </div>
     </div>
   );

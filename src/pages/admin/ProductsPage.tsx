@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, X, Upload } from 'lucide-react';
-import { Product, Category } from '../../lib/supabase';
+import { Product, Category, Branch, ProductWithBranches } from '../../lib/supabase';
 import { adminApi } from '../../lib/adminApi';
 import { uploadImage, deleteImage } from '../../lib/imageUpload';
+import { supabase } from '../../lib/supabase';
 
-type ProductForm = Omit<Product, 'id' | 'created_at' | 'updated_at'>;
+type ProductForm = Omit<Product, 'id' | 'created_at' | 'updated_at'> & {
+  branch_ids: string[];
+};
 
 export function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductWithBranches[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -28,6 +32,7 @@ export function ProductsPage() {
     price_large: null,
     sort_order: 0,
     active: true,
+    branch_ids: [],
   });
 
   useEffect(() => {
@@ -41,12 +46,13 @@ export function ProductsPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [productsData, categoriesData] = await Promise.all([
-        adminApi.products.getAll(),
+      const [categoriesData, branchesData] = await Promise.all([
         adminApi.categories.getAll(),
+        supabase.from('branches').select('*').order('sort_order', { ascending: true }),
       ]);
-      setProducts(productsData);
       setCategories(categoriesData);
+      setBranches(branchesData.data || []);
+      await loadProducts();
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -68,8 +74,18 @@ export function ProductsPage() {
         filters.active = false;
       }
 
-      const data = await adminApi.products.getAll(filters);
-      setProducts(data);
+      const productsData = await adminApi.products.getAll(filters);
+
+      const { data: branchesData } = await supabase
+        .from('product_branches')
+        .select('product_id, branch_id');
+
+      const productsWithBranches = productsData.map(prod => ({
+        ...prod,
+        branch_ids: branchesData?.filter(pb => pb.product_id === prod.id).map(pb => pb.branch_id) || []
+      }));
+
+      setProducts(productsWithBranches);
     } catch (error) {
       console.error('Error loading products:', error);
     }
@@ -79,7 +95,19 @@ export function ProductsPage() {
     e.preventDefault();
 
     try {
-      let dataToSave = { ...formData };
+      let dataToSave = {
+        category_id: formData.category_id,
+        name: formData.name,
+        image_url: formData.image_url,
+        description: formData.description,
+        warning: formData.warning,
+        price_single: formData.price_single,
+        price_small: formData.price_small,
+        price_medium: formData.price_medium,
+        price_large: formData.price_large,
+        sort_order: formData.sort_order,
+        active: formData.active,
+      };
 
       if (formData.sort_order === 0) {
         const categoryProducts = products.filter(p => p.category_id === formData.category_id);
@@ -98,11 +126,39 @@ export function ProductsPage() {
         dataToSave.sort_order = targetSortOrder;
       }
 
+      let productId = editingId;
+
       if (editingId) {
         await adminApi.products.update(editingId, dataToSave);
       } else {
-        await adminApi.products.create(dataToSave);
+        const { data, error } = await supabase
+          .from('products')
+          .insert(dataToSave)
+          .select()
+          .single();
+
+        if (error) throw error;
+        productId = data.id;
       }
+
+      if (productId) {
+        await supabase
+          .from('product_branches')
+          .delete()
+          .eq('product_id', productId);
+
+        if (formData.branch_ids.length > 0) {
+          const branchInserts = formData.branch_ids.map(branchId => ({
+            product_id: productId,
+            branch_id: branchId
+          }));
+
+          await supabase
+            .from('product_branches')
+            .insert(branchInserts);
+        }
+      }
+
       await loadProducts();
       handleCloseModal();
     } catch (error) {
@@ -111,7 +167,7 @@ export function ProductsPage() {
     }
   };
 
-  const handleEdit = (product: Product) => {
+  const handleEdit = (product: ProductWithBranches) => {
     setEditingId(product.id);
     setFormData({
       category_id: product.category_id,
@@ -125,6 +181,7 @@ export function ProductsPage() {
       price_large: product.price_large,
       sort_order: product.sort_order,
       active: product.active,
+      branch_ids: product.branch_ids || [],
     });
     setShowModal(true);
   };
@@ -193,7 +250,17 @@ export function ProductsPage() {
       price_large: null,
       sort_order: 0,
       active: true,
+      branch_ids: [],
     });
+  };
+
+  const toggleBranch = (branchId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      branch_ids: prev.branch_ids.includes(branchId)
+        ? prev.branch_ids.filter(id => id !== branchId)
+        : [...prev.branch_ids, branchId]
+    }));
   };
 
   const getCategoryName = (categoryId: string) => {
@@ -409,6 +476,15 @@ export function ProductsPage() {
               <p className="text-sm text-gray-600 mb-2 min-h-[20px] truncate">
                 {product.description || ''}
               </p>
+              {product.branch_ids && product.branch_ids.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {product.branch_ids.map(branchId => (
+                    <span key={branchId} className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
+                      {branches.find(b => b.id === branchId)?.name}
+                    </span>
+                  ))}
+                </div>
+              )}
               <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
                 <span>Sıra: {product.sort_order}</span>
                 <span className={product.active ? 'text-green-600' : 'text-red-600'}>
@@ -600,6 +676,28 @@ export function ProductsPage() {
                     placeholder="0.00"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Şubeler
+                </label>
+                <div className="border border-gray-300 rounded-lg p-3 space-y-2 max-h-48 overflow-y-auto">
+                  {branches.map(branch => (
+                    <label key={branch.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                      <input
+                        type="checkbox"
+                        checked={formData.branch_ids.includes(branch.id)}
+                        onChange={() => toggleBranch(branch.id)}
+                        className="w-4 h-4 text-blue-600 rounded"
+                      />
+                      <span className="text-sm text-gray-900">{branch.name}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Hiç şube seçilmezse tüm şubelerde görünür
+                </p>
               </div>
 
               <div>

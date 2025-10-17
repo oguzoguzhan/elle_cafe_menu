@@ -29,6 +29,39 @@ export const adminApi = {
       const { data } = await supabase.auth.getSession();
       return !!data.session && !!sessionStorage.getItem(ADMIN_SESSION_KEY);
     },
+
+    async changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+      try {
+        const session = sessionStorage.getItem(ADMIN_SESSION_KEY);
+        if (!session) {
+          return { success: false, error: 'Oturum bulunamadı' };
+        }
+
+        const { username } = JSON.parse(session);
+        const email = `${username}@admin.local`;
+
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password: currentPassword,
+        });
+
+        if (signInError) {
+          return { success: false, error: 'Mevcut şifre yanlış' };
+        }
+
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: newPassword,
+        });
+
+        if (updateError) {
+          return { success: false, error: 'Şifre değiştirilemedi' };
+        }
+
+        return { success: true };
+      } catch (error) {
+        return { success: false, error: 'Bir hata oluştu' };
+      }
+    },
   },
 
   settings: {

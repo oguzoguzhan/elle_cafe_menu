@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, X, Upload } from 'lucide-react';
-import { Category, Branch } from '../../lib/supabase';
+import { Category, Branch, CategoryWithBranches } from '../../lib/supabase';
 import { adminApi } from '../../lib/adminApi';
 import { uploadImage, deleteImage } from '../../lib/imageUpload';
 import { supabase } from '../../lib/supabase';
 
-type CategoryForm = Omit<Category, 'id' | 'created_at' | 'updated_at'>;
+type CategoryForm = Omit<Category, 'id' | 'created_at' | 'updated_at'> & {
+  branch_ids: string[];
+};
 
 export function CategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<CategoryWithBranches[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -18,9 +20,9 @@ export function CategoriesPage() {
     name: '',
     image_url: null,
     parent_id: null,
-    branch_id: null,
     sort_order: 0,
     active: true,
+    branch_ids: [],
   });
 
   useEffect(() => {
@@ -31,8 +33,25 @@ export function CategoriesPage() {
   const loadCategories = async () => {
     setLoading(true);
     try {
-      const data = await adminApi.categories.getAll();
-      setCategories(data);
+      const { data: categoriesData, error: catError } = await supabase
+        .from('categories')
+        .select('*')
+        .order('sort_order', { ascending: true });
+
+      if (catError) throw catError;
+
+      const { data: branchesData, error: branchError } = await supabase
+        .from('category_branches')
+        .select('category_id, branch_id');
+
+      if (branchError) throw branchError;
+
+      const categoriesWithBranches = (categoriesData || []).map(cat => ({
+        ...cat,
+        branch_ids: branchesData?.filter(cb => cb.category_id === cat.id).map(cb => cb.branch_id) || []
+      }));
+
+      setCategories(categoriesWithBranches);
     } catch (error) {
       console.error('Error loading categories:', error);
     } finally {
@@ -58,18 +77,52 @@ export function CategoriesPage() {
     e.preventDefault();
 
     try {
-      let dataToSave = { ...formData };
+      let dataToSave = {
+        name: formData.name,
+        image_url: formData.image_url,
+        parent_id: formData.parent_id,
+        sort_order: formData.sort_order,
+        active: formData.active,
+      };
 
       if (!editingId && formData.sort_order === 0) {
         const maxSortOrder = categories.reduce((max, c) => Math.max(max, c.sort_order), 0);
         dataToSave.sort_order = maxSortOrder + 1;
       }
 
+      let categoryId = editingId;
+
       if (editingId) {
         await adminApi.categories.update(editingId, dataToSave);
       } else {
-        await adminApi.categories.create(dataToSave);
+        const { data, error } = await supabase
+          .from('categories')
+          .insert(dataToSave)
+          .select()
+          .single();
+
+        if (error) throw error;
+        categoryId = data.id;
       }
+
+      if (categoryId) {
+        await supabase
+          .from('category_branches')
+          .delete()
+          .eq('category_id', categoryId);
+
+        if (formData.branch_ids.length > 0) {
+          const branchInserts = formData.branch_ids.map(branchId => ({
+            category_id: categoryId,
+            branch_id: branchId
+          }));
+
+          await supabase
+            .from('category_branches')
+            .insert(branchInserts);
+        }
+      }
+
       await loadCategories();
       handleCloseModal();
     } catch (error) {
@@ -78,15 +131,15 @@ export function CategoriesPage() {
     }
   };
 
-  const handleEdit = (category: Category) => {
+  const handleEdit = (category: CategoryWithBranches) => {
     setEditingId(category.id);
     setFormData({
       name: category.name,
       image_url: category.image_url,
       parent_id: category.parent_id,
-      branch_id: category.branch_id,
       sort_order: category.sort_order,
       active: category.active,
+      branch_ids: category.branch_ids || [],
     });
     setShowModal(true);
   };
@@ -147,10 +200,19 @@ export function CategoriesPage() {
       name: '',
       image_url: null,
       parent_id: null,
-      branch_id: null,
       sort_order: 0,
       active: true,
+      branch_ids: [],
     });
+  };
+
+  const toggleBranch = (branchId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      branch_ids: prev.branch_ids.includes(branchId)
+        ? prev.branch_ids.filter(id => id !== branchId)
+        : [...prev.branch_ids, branchId]
+    }));
   };
 
   const getParentCategories = () => {
@@ -158,7 +220,7 @@ export function CategoriesPage() {
   };
 
   const buildCategoryTree = () => {
-    const tree: Array<{ category: Category; children: Category[] }> = [];
+    const tree: Array<{ category: CategoryWithBranches; children: CategoryWithBranches[] }> = [];
     const parentCategories = categories.filter(c => c.parent_id === null);
 
     parentCategories.forEach(parent => {
@@ -201,14 +263,18 @@ export function CategoriesPage() {
                 <div>
                   <h3 className="font-semibold text-gray-900">{category.name}</h3>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
-                    {category.branch_id && (
-                      <>
-                        <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
-                          {branches.find(b => b.id === category.branch_id)?.name}
-                        </span>
-                        <span>•</span>
-                      </>
+                    {category.branch_ids && category.branch_ids.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {category.branch_ids.map(branchId => (
+                          <span key={branchId} className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
+                            {branches.find(b => b.id === branchId)?.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-gray-500 italic">Tüm şubeler</span>
                     )}
+                    <span>•</span>
                     <span>Sıra: {category.sort_order}</span>
                     <span>•</span>
                     <span className={category.active ? 'text-green-600' : 'text-red-600'}>
@@ -248,14 +314,18 @@ export function CategoriesPage() {
                       <div>
                         <h4 className="font-medium text-gray-900">{child.name}</h4>
                         <div className="flex items-center gap-2 text-sm text-gray-600">
-                          {child.branch_id && (
-                            <>
-                              <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
-                                {branches.find(b => b.id === child.branch_id)?.name}
-                              </span>
-                              <span>•</span>
-                            </>
+                          {child.branch_ids && child.branch_ids.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {child.branch_ids.map(branchId => (
+                                <span key={branchId} className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
+                                  {branches.find(b => b.id === branchId)?.name}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-gray-500 italic">Tüm şubeler</span>
                           )}
+                          <span>•</span>
                           <span>Sıra: {child.sort_order}</span>
                           <span>•</span>
                           <span className={child.active ? 'text-green-600' : 'text-red-600'}>
@@ -353,21 +423,24 @@ export function CategoriesPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Şube
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Şubeler
                 </label>
-                <select
-                  value={formData.branch_id || ''}
-                  onChange={(e) => setFormData({ ...formData, branch_id: e.target.value || null })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                >
-                  <option value="">Tüm Şubeler</option>
+                <div className="border border-gray-300 rounded-lg p-3 space-y-2 max-h-48 overflow-y-auto">
                   {branches.map(branch => (
-                    <option key={branch.id} value={branch.id}>{branch.name}</option>
+                    <label key={branch.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                      <input
+                        type="checkbox"
+                        checked={formData.branch_ids.includes(branch.id)}
+                        onChange={() => toggleBranch(branch.id)}
+                        className="w-4 h-4 text-blue-600 rounded"
+                      />
+                      <span className="text-sm text-gray-900">{branch.name}</span>
+                    </label>
                   ))}
-                </select>
+                </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Şube seçilirse sadece o şubenin subdomain'inde görünür
+                  Hiç şube seçilmezse tüm şubelerde görünür
                 </p>
               </div>
 
