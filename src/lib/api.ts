@@ -1,4 +1,4 @@
-import { supabase, Settings, Category, Product, Branch } from './supabase';
+import { supabase, Settings, Category, Product } from './supabase';
 
 export const api = {
   settings: {
@@ -13,20 +13,8 @@ export const api = {
     },
   },
 
-  branches: {
-    async getAll(): Promise<Branch[]> {
-      const { data, error } = await supabase
-        .from('branches')
-        .select('*')
-        .order('sort_order', { ascending: true });
-
-      if (error) throw error;
-      return data || [];
-    },
-  },
-
   categories: {
-    async getAll(parentId?: string | null, branchId?: string): Promise<Category[]> {
+    async getAll(parentId?: string | null): Promise<Category[]> {
       let query = supabase
         .from('categories')
         .select('*')
@@ -41,22 +29,7 @@ export const api = {
 
       const { data, error } = await query;
       if (error) throw error;
-
-      let categories = data || [];
-
-      if (branchId) {
-        const { data: branchData, error: branchError } = await supabase
-          .from('category_branches')
-          .select('category_id')
-          .eq('branch_id', branchId);
-
-        if (branchError) throw branchError;
-
-        const categoryIds = new Set(branchData?.map(cb => cb.category_id) || []);
-        categories = categories.filter(c => categoryIds.has(c.id));
-      }
-
-      return categories;
+      return data || [];
     },
 
     async hasSubcategories(categoryId: string): Promise<boolean> {
@@ -73,19 +46,13 @@ export const api = {
   },
 
   products: {
-    async getByCategoryId(categoryId: string, branchId?: string): Promise<Product[]> {
-      let query = supabase
+    async getByCategoryId(categoryId: string): Promise<Product[]> {
+      const { data, error } = await supabase
         .from('products')
         .select('*')
         .eq('category_id', categoryId)
         .eq('active', true)
         .order('sort_order', { ascending: true });
-
-      if (branchId) {
-        query = query.eq('branch_id', branchId);
-      }
-
-      const { data, error } = await query;
 
       if (error) throw error;
       return data || [];

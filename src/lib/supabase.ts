@@ -47,14 +47,6 @@ export type Settings = {
   updated_at: string;
 };
 
-export type Branch = {
-  id: string;
-  name: string;
-  subdomain: string | null;
-  sort_order: number;
-  created_at: string;
-};
-
 export type Category = {
   id: string;
   name: string;
@@ -64,13 +56,11 @@ export type Category = {
   active: boolean;
   created_at: string;
   updated_at: string;
-  branch_ids?: string[];
 };
 
 export type Product = {
   id: string;
   category_id: string;
-  branch_id: string | null;
   name: string;
   image_url: string | null;
   description: string | null;
