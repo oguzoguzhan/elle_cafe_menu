@@ -224,6 +224,19 @@ export function SettingsPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
+              Site Başlığı (Browser Tab)
+            </label>
+            <input
+              type="text"
+              value={settings.site_title}
+              onChange={(e) => setSettings({ ...settings, site_title: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              placeholder="Dijital Menü"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Hoş Geldiniz Yazısı (Türkçe)
             </label>
             <input

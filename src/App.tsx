@@ -94,6 +94,9 @@ function App() {
     try {
       const data = await api.settings.get();
       setSettings(data);
+      if (data.site_title) {
+        document.title = data.site_title;
+      }
     } catch (error) {
       console.error('Error loading settings:', error);
     }
