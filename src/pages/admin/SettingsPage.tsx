@@ -33,14 +33,9 @@ export function SettingsPage() {
 
     setUploading(true);
     try {
-      if (settings.logo_url) {
-        await deleteImage(settings.logo_url);
-      }
       const url = await uploadImage(file, 'logo');
-      const updatedSettings = { ...settings, logo_url: url };
-      setSettings(updatedSettings);
-      await adminApi.settings.update(updatedSettings);
-      setMessage('Logo başarıyla yüklendi');
+      setSettings({ ...settings, logo_url: url });
+      setMessage('Logo yüklendi. Kaydetmeyi unutmayın!');
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       console.error('Logo upload error:', error);
@@ -50,21 +45,13 @@ export function SettingsPage() {
     }
   };
 
-  const handleLogoDelete = async () => {
+  const handleLogoDelete = () => {
     if (!settings?.logo_url) return;
     if (!confirm('Logo silinecek, emin misiniz?')) return;
 
-    setUploading(true);
-    try {
-      await deleteImage(settings.logo_url);
-      setSettings({ ...settings, logo_url: null });
-      setMessage('Logo silindi');
-      setTimeout(() => setMessage(''), 3000);
-    } catch (error) {
-      setMessage('Logo silme hatası');
-    } finally {
-      setUploading(false);
-    }
+    setSettings({ ...settings, logo_url: null });
+    setMessage('Logo kaldırıldı. Kaydetmeyi unutmayın!');
+    setTimeout(() => setMessage(''), 3000);
   };
 
   const handleHeaderLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,14 +60,9 @@ export function SettingsPage() {
 
     setUploading(true);
     try {
-      if (settings.header_logo_url) {
-        await deleteImage(settings.header_logo_url);
-      }
       const url = await uploadImage(file, 'header-logo');
-      const updatedSettings = { ...settings, header_logo_url: url };
-      setSettings(updatedSettings);
-      await adminApi.settings.update(updatedSettings);
-      setMessage('Header logo başarıyla yüklendi');
+      setSettings({ ...settings, header_logo_url: url });
+      setMessage('Header logo yüklendi. Kaydetmeyi unutmayın!');
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       console.error('Header logo upload error:', error);
@@ -90,21 +72,13 @@ export function SettingsPage() {
     }
   };
 
-  const handleHeaderLogoDelete = async () => {
+  const handleHeaderLogoDelete = () => {
     if (!settings?.header_logo_url) return;
     if (!confirm('Header logo silinecek, emin misiniz?')) return;
 
-    setUploading(true);
-    try {
-      await deleteImage(settings.header_logo_url);
-      setSettings({ ...settings, header_logo_url: null });
-      setMessage('Header logo silindi');
-      setTimeout(() => setMessage(''), 3000);
-    } catch (error) {
-      setMessage('Header logo silme hatası');
-    } finally {
-      setUploading(false);
-    }
+    setSettings({ ...settings, header_logo_url: null });
+    setMessage('Header logo kaldırıldı. Kaydetmeyi unutmayın!');
+    setTimeout(() => setMessage(''), 3000);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
