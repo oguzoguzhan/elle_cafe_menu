@@ -81,3 +81,11 @@ export type Admin = {
   password_hash: string;
   created_at: string;
 };
+
+export type Branch = {
+  id: string;
+  name: string;
+  subdomain: string | null;
+  sort_order: number;
+  created_at: string;
+};

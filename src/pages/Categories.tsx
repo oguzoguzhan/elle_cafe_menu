@@ -5,25 +5,26 @@ import { Header } from '../components/Header';
 
 interface CategoriesProps {
   settings: Settings;
+  branchId: string | null;
   breadcrumb: Array<{ id: string | null; name: string }>;
   onCategorySelect: (categoryId: string, breadcrumb: Array<{ id: string | null; name: string }>) => void;
   onBreadcrumbUpdate: (breadcrumb: Array<{ id: string | null; name: string }>) => void;
   onLogoClick: () => void;
 }
 
-export function Categories({ settings, breadcrumb, onCategorySelect, onBreadcrumbUpdate, onLogoClick }: CategoriesProps) {
+export function Categories({ settings, branchId, breadcrumb, onCategorySelect, onBreadcrumbUpdate, onLogoClick }: CategoriesProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const parentId = breadcrumb[breadcrumb.length - 1].id;
     loadCategories(parentId);
-  }, [breadcrumb]);
+  }, [breadcrumb, branchId]);
 
   const loadCategories = async (parentId: string | null) => {
     setLoading(true);
     try {
-      const data = await api.categories.getAll(parentId);
+      const data = await api.categories.getAll(parentId, branchId);
       setCategories(data);
     } catch (error) {
       console.error('Error loading categories:', error);

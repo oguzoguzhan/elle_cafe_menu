@@ -14,12 +14,16 @@ export const api = {
   },
 
   categories: {
-    async getAll(parentId?: string | null): Promise<Category[]> {
+    async getAll(parentId?: string | null, branchId?: string | null): Promise<Category[]> {
       let query = supabase
         .from('categories')
         .select('*')
         .eq('active', true)
         .order('sort_order', { ascending: true });
+
+      if (branchId) {
+        query = query.eq('branch_id', branchId);
+      }
 
       if (parentId === null) {
         query = query.is('parent_id', null);

@@ -4,15 +4,17 @@ import { Categories } from './pages/Categories';
 import { Products } from './pages/Products';
 import { Login } from './pages/admin/Login';
 import { Dashboard } from './pages/admin/Dashboard';
-import { Settings } from './lib/supabase';
+import { Settings, Branch } from './lib/supabase';
 import { api } from './lib/api';
 import { adminApi } from './lib/adminApi';
+import { detectBranchFromHostname } from './lib/branchDetection';
 
 type View = 'landing' | 'categories' | 'products' | 'admin-login' | 'admin-dashboard';
 
 function App() {
   const [view, setView] = useState<View>('landing');
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [currentBranch, setCurrentBranch] = useState<Branch | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [breadcrumb, setBreadcrumb] = useState<Array<{ id: string | null; name: string }>>([]);
   const [categoryBreadcrumb, setCategoryBreadcrumb] = useState<Array<{ id: string | null; name: string }>>([{ id: null, name: 'Ana Kategoriler' }]);
@@ -20,6 +22,7 @@ function App() {
 
   useEffect(() => {
     loadSettings();
+    detectBranch();
     checkAdminAuth();
 
     const path = window.location.pathname;
@@ -27,6 +30,15 @@ function App() {
       setView('admin-login');
     }
   }, []);
+
+  const detectBranch = async () => {
+    try {
+      const branch = await detectBranchFromHostname();
+      setCurrentBranch(branch);
+    } catch (error) {
+      console.error('Error detecting branch:', error);
+    }
+  };
 
   const loadSettings = async () => {
     try {
@@ -103,11 +115,11 @@ function App() {
   }
 
   if (view === 'categories') {
-    return <Categories settings={settings} breadcrumb={categoryBreadcrumb} onCategorySelect={handleCategorySelect} onBreadcrumbUpdate={setCategoryBreadcrumb} onLogoClick={handleLogoClick} />;
+    return <Categories settings={settings} branchId={currentBranch?.id || null} breadcrumb={categoryBreadcrumb} onCategorySelect={handleCategorySelect} onBreadcrumbUpdate={setCategoryBreadcrumb} onLogoClick={handleLogoClick} />;
   }
 
   if (view === 'products') {
-    return <Products categoryId={selectedCategoryId} breadcrumb={breadcrumb} settings={settings} onBreadcrumbClick={handleBreadcrumbClick} onLogoClick={handleLogoClick} />;
+    return <Products categoryId={selectedCategoryId} branchId={currentBranch?.id || null} breadcrumb={breadcrumb} settings={settings} onBreadcrumbClick={handleBreadcrumbClick} onLogoClick={handleLogoClick} />;
   }
 
   return null;
