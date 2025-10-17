@@ -1,16 +1,17 @@
 import { useState } from 'react';
-import { LogOut, Settings, FolderTree, Package, FileSpreadsheet } from 'lucide-react';
+import { LogOut, Settings, FolderTree, Package, FileSpreadsheet, Building2 } from 'lucide-react';
 import { adminApi } from '../../lib/adminApi';
 import { SettingsPage } from './SettingsPage';
 import { CategoriesPage } from './CategoriesPage';
 import { ProductsPage } from './ProductsPage';
 import { BulkImportPage } from './BulkImportPage';
+import { BranchesPage } from './BranchesPage';
 
 interface DashboardProps {
   onLogout: () => void;
 }
 
-type Tab = 'settings' | 'categories' | 'products' | 'bulk-import';
+type Tab = 'settings' | 'branches' | 'categories' | 'products' | 'bulk-import';
 
 export function Dashboard({ onLogout }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<Tab>('settings');
@@ -52,6 +53,17 @@ export function Dashboard({ onLogout }: DashboardProps) {
               Genel Ayarlar
             </button>
             <button
+              onClick={() => setActiveTab('branches')}
+              className={`flex items-center gap-2 px-6 py-4 font-medium ${
+                activeTab === 'branches'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Building2 className="w-5 h-5" />
+              Şubeler
+            </button>
+            <button
               onClick={() => setActiveTab('categories')}
               className={`flex items-center gap-2 px-6 py-4 font-medium ${
                 activeTab === 'categories'
@@ -89,6 +101,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
         <div className="bg-white rounded-lg shadow-sm p-6">
           {activeTab === 'settings' && <SettingsPage />}
+          {activeTab === 'branches' && <BranchesPage />}
           {activeTab === 'categories' && <CategoriesPage />}
           {activeTab === 'products' && <ProductsPage />}
           {activeTab === 'bulk-import' && <BulkImportPage />}
