@@ -1,5 +1,14 @@
 import { supabase, Settings, Category, Product } from './supabase';
 
+export type Branch = {
+  id: string;
+  name: string;
+  subdomain: string | null;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 const ADMIN_SESSION_KEY = 'admin_session';
 
 export const adminApi = {
@@ -180,6 +189,50 @@ export const adminApi = {
     async delete(id: string): Promise<void> {
       const { error } = await supabase
         .from('products')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+  },
+
+  branches: {
+    async getAll(): Promise<Branch[]> {
+      const { data, error } = await supabase
+        .from('branches')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    },
+
+    async create(branch: Omit<Branch, 'id' | 'created_at' | 'updated_at'>): Promise<Branch> {
+      const { data, error } = await supabase
+        .from('branches')
+        .insert(branch)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+
+    async update(id: string, updates: Partial<Branch>): Promise<Branch> {
+      const { data, error } = await supabase
+        .from('branches')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+
+    async delete(id: string): Promise<void> {
+      const { error } = await supabase
+        .from('branches')
         .delete()
         .eq('id', id);
 
