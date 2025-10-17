@@ -1,48 +1,41 @@
-import { supabase } from './supabase';
-
 export type ImageCategory = 'logo' | 'header-logo' | 'kategori' | 'urun';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export const uploadImage = async (
   file: File,
   category: ImageCategory
 ): Promise<string> => {
-  const timestamp = Date.now();
-  const randomNum = Math.round(Math.random() * 1E9);
-  const extension = file.name.split('.').pop() || 'jpg';
-  const filename = `${category}/${timestamp}_${randomNum}.${extension}`;
+  const formData = new FormData();
+  formData.append('image', file);
+  formData.append('filename', `${category}_${Date.now()}_${file.name}`);
 
-  const { data, error } = await supabase.storage
-    .from('images')
-    .upload(filename, file, {
-      cacheControl: '3600',
-      upsert: false
-    });
+  const response = await fetch(`${API_URL}/upload`, {
+    method: 'POST',
+    body: formData
+  });
 
-  if (error) {
-    throw new Error(error.message || 'Resim yükleme başarısız');
+  if (!response.ok) {
+    throw new Error('Resim yükleme başarısız');
   }
 
-  const { data: urlData } = supabase.storage
-    .from('images')
-    .getPublicUrl(data.path);
-
-  return urlData.publicUrl;
+  const data = await response.json();
+  return data.url;
 };
 
 export const deleteImage = async (imageUrl: string): Promise<void> => {
   if (!imageUrl) return;
 
   try {
-    const url = new URL(imageUrl);
-    const pathParts = url.pathname.split('/images/');
-    if (pathParts.length < 2) return;
+    const response = await fetch(`${API_URL}/delete`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: imageUrl })
+    });
 
-    const filename = pathParts[1];
-    if (!filename) return;
-
-    await supabase.storage
-      .from('images')
-      .remove([filename]);
+    if (!response.ok) {
+      console.warn('Image deletion failed');
+    }
   } catch (error) {
     console.warn('Image deletion error:', error);
   }
