@@ -32,7 +32,10 @@ export const api = {
 
       let categories = data || [];
 
+      console.log('Categories fetched:', categories.length, 'ParentId:', parentId, 'BranchId:', branchId);
+
       if (!branchId) {
+        console.log('No branchId, returning all categories');
         return categories;
       }
 
@@ -60,6 +63,8 @@ export const api = {
         categories = categories.filter(cat =>
           !categoriesWithBranches.has(cat.id) || branchCategoryIds.has(cat.id)
         );
+
+        console.log('After branch filtering:', categories.length);
       }
 
       return categories;
@@ -91,7 +96,10 @@ export const api = {
 
       let products = data || [];
 
+      console.log('Products fetched for category:', categoryId, 'Count:', products.length, 'BranchId:', branchId);
+
       if (!branchId) {
+        console.log('No branchId, returning all products');
         return products;
       }
 
@@ -115,6 +123,8 @@ export const api = {
         products = products.filter(prod =>
           !productsWithBranches.has(prod.id) || branchProductIds.has(prod.id)
         );
+
+        console.log('After branch filtering:', products.length);
       }
 
       return products;
