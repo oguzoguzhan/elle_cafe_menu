@@ -813,6 +813,31 @@ export function SettingsPage() {
         </div>
       </div>
 
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-xl font-semibold mb-4">Dil Seçim Barı Ayarları</h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Arkaplan Rengi
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="color"
+                value={settings.language_bar_bg_color}
+                onChange={(e) => setSettings({ ...settings, language_bar_bg_color: e.target.value })}
+                className="h-10 w-20 rounded border border-gray-300"
+              />
+              <input
+                type="text"
+                value={settings.language_bar_bg_color}
+                onChange={(e) => setSettings({ ...settings, language_bar_bg_color: e.target.value })}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       {message && (
         <div className={`p-4 rounded-lg ${message.includes('başarıyla') ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
           {message}

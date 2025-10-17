@@ -16,7 +16,10 @@ export function Header({ settings, onLogoClick, showBackButton = false, onBackCl
 
   return (
     <>
-      <div className="sticky top-0 z-20 bg-gray-100 border-b border-gray-200">
+      <div
+        className="sticky top-0 z-20 border-b border-gray-200"
+        style={{ backgroundColor: settings.language_bar_bg_color }}
+      >
         <div className="max-w-4xl mx-auto px-4 py-2 flex justify-end">
           <LanguageSelector />
         </div>
