@@ -50,10 +50,15 @@ export function BulkImportPage() {
           ? categoryMap.get(category.parent_id)
           : null;
 
+        const categoryBranchesStr = getCategoryBranches(category?.id || '');
+        const parentCategoryBranchesStr = parentCategory ? getCategoryBranches(parentCategory.id) : '';
+
         return {
           'ID': product.id,
           'Kategori': parentCategory?.name_tr || category?.name_tr || '',
+          'Kategori Şubeler': parentCategoryBranchesStr || categoryBranchesStr,
           'Alt Kategori': parentCategory ? category?.name_tr : '',
+          'Alt Kategori Şubeler': parentCategory ? categoryBranchesStr : '',
           'Ürün Adı (TR)': product.name_tr,
           'Ürün Adı (EN)': product.name_en || '',
           'Açıklama (TR)': product.description_tr || '',
@@ -64,7 +69,7 @@ export function BulkImportPage() {
           'Küçük Fiyat': product.price_small || '',
           'Orta Fiyat': product.price_medium || '',
           'Büyük Fiyat': product.price_large || '',
-          'Şubeler': getProductBranches(product.id),
+          'Ürün Şubeler': getProductBranches(product.id),
           'Sıra': product.sort_order,
           'Durum': product.active ? 'Aktif' : 'Pasif',
           'Resim': product.image_url || '',
@@ -78,7 +83,9 @@ export function BulkImportPage() {
       const colWidths = [
         { wch: 36 },
         { wch: 20 },
+        { wch: 30 },
         { wch: 20 },
+        { wch: 30 },
         { wch: 30 },
         { wch: 30 },
         { wch: 40 },
@@ -146,7 +153,9 @@ export function BulkImportPage() {
       for (const row of jsonData) {
         try {
           const mainCategoryName = (row['Kategori'] || '').toString().trim();
+          const mainCategoryBranchesStr = (row['Kategori Şubeler'] || '').toString().trim();
           const subCategoryName = (row['Alt Kategori'] || '').toString().trim();
+          const subCategoryBranchesStr = (row['Alt Kategori Şubeler'] || '').toString().trim();
 
           if (!mainCategoryName || !row['Ürün Adı (TR)']) {
             errorCount++;
@@ -155,6 +164,7 @@ export function BulkImportPage() {
           }
 
           let targetCategory = categoryMap.get(mainCategoryName.toLowerCase());
+          let isNewMainCategory = false;
 
           if (!targetCategory) {
             targetCategory = await adminApi.categories.create({
@@ -166,6 +176,22 @@ export function BulkImportPage() {
               active: true,
             });
             categoryMap.set(mainCategoryName.toLowerCase(), targetCategory);
+            isNewMainCategory = true;
+          }
+
+          if (mainCategoryBranchesStr && !subCategoryName) {
+            const categoryBranchNames = mainCategoryBranchesStr.split(',').map((b: string) => b.trim()).filter(Boolean);
+            const categoryBranchIds = categoryBranchNames.map((name: string) => branchMap.get(name.toLowerCase())?.id).filter(Boolean);
+
+            if (categoryBranchIds.length > 0) {
+              if (isNewMainCategory) {
+                await Promise.all(
+                  categoryBranchIds.map(branchId =>
+                    supabase.from('category_branches').insert({ category_id: targetCategory!.id, branch_id: branchId })
+                  )
+                );
+              }
+            }
           }
 
           let categoryId = targetCategory.id;
@@ -175,6 +201,7 @@ export function BulkImportPage() {
               c => c.name_tr.toLowerCase() === subCategoryName.toLowerCase() &&
                    c.parent_id === targetCategory!.id
             );
+            let isNewSubCategory = false;
 
             if (!subCategory) {
               subCategory = await adminApi.categories.create({
@@ -186,6 +213,33 @@ export function BulkImportPage() {
                 active: true,
               });
               categories.push(subCategory);
+              isNewSubCategory = true;
+            }
+
+            if (subCategoryBranchesStr) {
+              const subCategoryBranchNames = subCategoryBranchesStr.split(',').map((b: string) => b.trim()).filter(Boolean);
+              const subCategoryBranchIds = subCategoryBranchNames.map((name: string) => branchMap.get(name.toLowerCase())?.id).filter(Boolean);
+
+              if (subCategoryBranchIds.length > 0) {
+                if (isNewSubCategory) {
+                  await Promise.all(
+                    subCategoryBranchIds.map(branchId =>
+                      supabase.from('category_branches').insert({ category_id: subCategory!.id, branch_id: branchId })
+                    )
+                  );
+                }
+              }
+            } else if (mainCategoryBranchesStr && isNewSubCategory) {
+              const categoryBranchNames = mainCategoryBranchesStr.split(',').map((b: string) => b.trim()).filter(Boolean);
+              const categoryBranchIds = categoryBranchNames.map((name: string) => branchMap.get(name.toLowerCase())?.id).filter(Boolean);
+
+              if (categoryBranchIds.length > 0) {
+                await Promise.all(
+                  categoryBranchIds.map(branchId =>
+                    supabase.from('category_branches').insert({ category_id: subCategory!.id, branch_id: branchId })
+                  )
+                );
+              }
             }
 
             categoryId = subCategory.id;
@@ -208,9 +262,9 @@ export function BulkImportPage() {
             }
           }
 
-          const branchesStr = (row['Şubeler'] || '').toString().trim();
-          const branchNames = branchesStr ? branchesStr.split(',').map((b: string) => b.trim()).filter(Boolean) : [];
-          const branchIds = branchNames.map((name: string) => branchMap.get(name.toLowerCase())?.id).filter(Boolean);
+          const productBranchesStr = (row['Ürün Şubeler'] || '').toString().trim();
+          const productBranchNames = productBranchesStr ? productBranchesStr.split(',').map((b: string) => b.trim()).filter(Boolean) : [];
+          const productBranchIds = productBranchNames.map((name: string) => branchMap.get(name.toLowerCase())?.id).filter(Boolean);
 
           const productData = {
             category_id: categoryId,
@@ -232,9 +286,9 @@ export function BulkImportPage() {
           if (importMode === 'deleteAll') {
             const newProduct = await adminApi.products.create(productData);
 
-            if (branchIds.length > 0) {
+            if (productBranchIds.length > 0) {
               await Promise.all(
-                branchIds.map(branchId =>
+                productBranchIds.map(branchId =>
                   supabase.from('product_branches').insert({ product_id: newProduct.id, branch_id: branchId })
                 )
               );
@@ -248,9 +302,9 @@ export function BulkImportPage() {
                 await adminApi.products.update(productId.toString(), productData);
 
                 await supabase.from('product_branches').delete().eq('product_id', productId.toString());
-                if (branchIds.length > 0) {
+                if (productBranchIds.length > 0) {
                   await Promise.all(
-                    branchIds.map(branchId =>
+                    productBranchIds.map(branchId =>
                       supabase.from('product_branches').insert({ product_id: productId.toString(), branch_id: branchId })
                     )
                   );
@@ -264,9 +318,9 @@ export function BulkImportPage() {
               } catch (updateError) {
                 const newProduct = await adminApi.products.create(productData);
 
-                if (branchIds.length > 0) {
+                if (productBranchIds.length > 0) {
                   await Promise.all(
-                    branchIds.map(branchId =>
+                    productBranchIds.map(branchId =>
                       supabase.from('product_branches').insert({ product_id: newProduct.id, branch_id: branchId })
                     )
                   );
@@ -278,9 +332,9 @@ export function BulkImportPage() {
             } else {
               const newProduct = await adminApi.products.create(productData);
 
-              if (branchIds.length > 0) {
+              if (productBranchIds.length > 0) {
                 await Promise.all(
-                  branchIds.map(branchId =>
+                  productBranchIds.map(branchId =>
                     supabase.from('product_branches').insert({ product_id: newProduct.id, branch_id: branchId })
                   )
                 );
@@ -334,7 +388,9 @@ export function BulkImportPage() {
             <ul className="list-disc list-inside space-y-1">
               <li>ID (güncellemeler için, yeni kayıtlarda boş bırakın)</li>
               <li>Kategori (zorunlu) - Ana kategori adı (Türkçe)</li>
+              <li>Kategori Şubeler (opsiyonel) - Ana kategorinin şubeleri</li>
               <li>Alt Kategori (opsiyonel) - Alt kategori varsa</li>
+              <li>Alt Kategori Şubeler (opsiyonel) - Alt kategorinin şubeleri</li>
               <li>Ürün Adı (TR) (zorunlu)</li>
               <li>Ürün Adı (EN) (opsiyonel)</li>
               <li>Açıklama (TR)</li>
@@ -343,7 +399,7 @@ export function BulkImportPage() {
               <li>Uyarı (EN)</li>
               <li>Fiyat (tekli fiyat)</li>
               <li>Küçük Fiyat, Orta Fiyat, Büyük Fiyat</li>
-              <li>Şubeler (virgülle ayrılmış şube isimleri)</li>
+              <li>Ürün Şubeler (virgülle ayrılmış şube isimleri)</li>
               <li>Sıra (0 ise otomatik atanır)</li>
               <li>Durum (Aktif/Pasif)</li>
               <li>Resim (URL)</li>
@@ -458,7 +514,9 @@ export function BulkImportPage() {
           <li>• Yeni ürün eklerken ID sütununu boş bırakın</li>
           <li>• Mevcut ürünü güncellemek için ID sütununu doldurun</li>
           <li>• Kategori ve Alt Kategori yoksa otomatik oluşturulur</li>
-          <li>• Şubeler sütunu: Birden fazla şube için virgülle ayırın (örn: "Merkez, Bahçelievler")</li>
+          <li>• Şube sütunları: Birden fazla şube için virgülle ayırın (örn: "Merkez, Bahçelievler")</li>
+          <li>• Alt Kategori Şubeler boşsa, Kategori Şubeler kullanılır</li>
+          <li>• Kategori şubeleri sadece yeni kategoriler için işlenir</li>
           <li>• Dil alanları: TR zorunlu, EN opsiyonel</li>
           <li>• Sıra değeri 0 ise otomatik sıra numarası atanır</li>
           <li>• Durum sütunu: "Aktif" veya "Pasif" yazılmalı</li>
