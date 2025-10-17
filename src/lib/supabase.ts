@@ -15,9 +15,13 @@ export type Settings = {
   logo_url: string | null;
   logo_width: number;
   welcome_text: string;
+  welcome_text_tr: string;
+  welcome_text_en: string;
   welcome_font_size: number;
   welcome_color: string;
   button_text: string;
+  button_text_tr: string;
+  button_text_en: string;
   button_bg_color: string;
   button_text_color: string;
   category_grid: 'one' | 'two';
@@ -44,12 +48,15 @@ export type Settings = {
   product_price_font_size: number;
   back_button_bg_color: string;
   back_button_text_color: string;
+  default_language: 'tr' | 'en';
   updated_at: string;
 };
 
 export type Category = {
   id: string;
   name: string;
+  name_tr: string;
+  name_en: string | null;
   image_url: string | null;
   parent_id: string | null;
   sort_order: number;
@@ -72,9 +79,15 @@ export type Product = {
   id: string;
   category_id: string;
   name: string;
+  name_tr: string;
+  name_en: string | null;
   image_url: string | null;
   description: string | null;
+  description_tr: string | null;
+  description_en: string | null;
   warning: string | null;
+  warning_tr: string | null;
+  warning_en: string | null;
   price_single: number | null;
   price_small: number | null;
   price_medium: number | null;

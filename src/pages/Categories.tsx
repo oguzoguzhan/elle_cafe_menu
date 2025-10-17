@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Category, Settings } from '../lib/supabase';
 import { api } from '../lib/api';
 import { Header } from '../components/Header';
+import { useLanguage } from '../lib/languageContext';
 
 interface CategoriesProps {
   settings: Settings;
@@ -13,6 +14,7 @@ interface CategoriesProps {
 }
 
 export function Categories({ settings, branchId, breadcrumb, onCategorySelect, onBreadcrumbUpdate, onLogoClick }: CategoriesProps) {
+  const { language } = useLanguage();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -133,7 +135,7 @@ export function Categories({ settings, branchId, breadcrumb, onCategorySelect, o
                       color: settings.category_name_color
                     }}
                   >
-                    {category.name}
+                    {language === 'en' && category.name_en ? category.name_en : category.name_tr}
                   </h3>
                 </div>
               </button>

@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Settings } from '../lib/supabase';
 import { api } from '../lib/api';
+import { useLanguage } from '../lib/languageContext';
+import { LanguageSelector } from '../components/LanguageSelector';
 
 interface LandingProps {
   onEnter: () => void;
 }
 
 export function Landing({ onEnter }: LandingProps) {
+  const { language } = useLanguage();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -41,11 +44,23 @@ export function Landing({ onEnter }: LandingProps) {
     );
   }
 
+  const welcomeText = language === 'en' && settings.welcome_text_en
+    ? settings.welcome_text_en
+    : settings.welcome_text_tr || settings.welcome_text;
+
+  const buttonText = language === 'en' && settings.button_text_en
+    ? settings.button_text_en
+    : settings.button_text_tr || settings.button_text;
+
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center p-6"
       style={{ backgroundColor: settings.bg_color }}
     >
+      <div className="absolute top-6 right-6">
+        <LanguageSelector />
+      </div>
+
       <div className="w-full max-w-md flex flex-col items-center gap-8">
         {settings.logo_url && (
           <img
@@ -63,7 +78,7 @@ export function Landing({ onEnter }: LandingProps) {
             color: settings.welcome_color,
           }}
         >
-          {settings.welcome_text}
+          {welcomeText}
         </h1>
 
         <button
@@ -74,7 +89,7 @@ export function Landing({ onEnter }: LandingProps) {
             color: settings.button_text_color,
           }}
         >
-          {settings.button_text}
+          {buttonText}
         </button>
       </div>
     </div>

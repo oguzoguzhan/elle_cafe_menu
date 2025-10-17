@@ -18,6 +18,8 @@ export function CategoriesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<CategoryForm>({
     name: '',
+    name_tr: '',
+    name_en: null,
     image_url: null,
     parent_id: null,
     sort_order: 0,
@@ -78,7 +80,9 @@ export function CategoriesPage() {
 
     try {
       let dataToSave = {
-        name: formData.name,
+        name: formData.name_tr || formData.name,
+        name_tr: formData.name_tr || formData.name,
+        name_en: formData.name_en,
         image_url: formData.image_url,
         parent_id: formData.parent_id,
         sort_order: formData.sort_order,
@@ -135,6 +139,8 @@ export function CategoriesPage() {
     setEditingId(category.id);
     setFormData({
       name: category.name,
+      name_tr: category.name_tr,
+      name_en: category.name_en,
       image_url: category.image_url,
       parent_id: category.parent_id,
       sort_order: category.sort_order,
@@ -377,14 +383,27 @@ export function CategoriesPage() {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Kategori Adı
+                  Kategori Adı (Türkçe)
                 </label>
                 <input
                   type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  value={formData.name_tr || formData.name}
+                  onChange={(e) => setFormData({ ...formData, name_tr: e.target.value, name: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                   required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Category Name (English)
+                </label>
+                <input
+                  type="text"
+                  value={formData.name_en || ''}
+                  onChange={(e) => setFormData({ ...formData, name_en: e.target.value || null })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  placeholder="Optional"
                 />
               </div>
 

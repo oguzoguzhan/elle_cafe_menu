@@ -23,9 +23,15 @@ export function ProductsPage() {
   const [formData, setFormData] = useState<ProductForm>({
     category_id: '',
     name: '',
+    name_tr: '',
+    name_en: null,
     image_url: null,
     description: null,
+    description_tr: null,
+    description_en: null,
     warning: null,
+    warning_tr: null,
+    warning_en: null,
     price_single: null,
     price_small: null,
     price_medium: null,
@@ -172,9 +178,15 @@ export function ProductsPage() {
     setFormData({
       category_id: product.category_id,
       name: product.name,
+      name_tr: product.name_tr,
+      name_en: product.name_en,
       image_url: product.image_url,
       description: product.description,
+      description_tr: product.description_tr,
+      description_en: product.description_en,
       warning: product.warning,
+      warning_tr: product.warning_tr,
+      warning_en: product.warning_en,
       price_single: product.price_single,
       price_small: product.price_small,
       price_medium: product.price_medium,
@@ -550,14 +562,27 @@ export function ProductsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Ürün Adı
+                  Ürün Adı (Türkçe)
                 </label>
                 <input
                   type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  value={formData.name_tr || formData.name}
+                  onChange={(e) => setFormData({ ...formData, name_tr: e.target.value, name: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                   required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Product Name (English)
+                </label>
+                <input
+                  type="text"
+                  value={formData.name_en || ''}
+                  onChange={(e) => setFormData({ ...formData, name_en: e.target.value || null })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  placeholder="Optional"
                 />
               </div>
 
@@ -597,11 +622,11 @@ export function ProductsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Açıklama
+                  Açıklama (Türkçe)
                 </label>
                 <textarea
-                  value={formData.description || ''}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value || null })}
+                  value={formData.description_tr || formData.description || ''}
+                  onChange={(e) => setFormData({ ...formData, description_tr: e.target.value || null, description: e.target.value || null })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                   rows={3}
                 />
@@ -609,14 +634,40 @@ export function ProductsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Uyarı
+                  Description (English)
                 </label>
                 <textarea
-                  value={formData.warning || ''}
-                  onChange={(e) => setFormData({ ...formData, warning: e.target.value || null })}
+                  value={formData.description_en || ''}
+                  onChange={(e) => setFormData({ ...formData, description_en: e.target.value || null })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  rows={3}
+                  placeholder="Optional"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Uyarı (Türkçe)
+                </label>
+                <textarea
+                  value={formData.warning_tr || formData.warning || ''}
+                  onChange={(e) => setFormData({ ...formData, warning_tr: e.target.value || null, warning: e.target.value || null })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                   rows={2}
                   placeholder="Opsiyonel uyarı mesajı"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Warning (English)
+                </label>
+                <textarea
+                  value={formData.warning_en || ''}
+                  onChange={(e) => setFormData({ ...formData, warning_en: e.target.value || null })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  rows={2}
+                  placeholder="Optional warning message"
                 />
               </div>
 

@@ -224,13 +224,26 @@ export function SettingsPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Hoş Geldiniz Yazısı
+              Hoş Geldiniz Yazısı (Türkçe)
             </label>
             <input
               type="text"
-              value={settings.welcome_text}
-              onChange={(e) => setSettings({ ...settings, welcome_text: e.target.value })}
+              value={settings.welcome_text_tr || settings.welcome_text}
+              onChange={(e) => setSettings({ ...settings, welcome_text_tr: e.target.value, welcome_text: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Welcome Text (English)
+            </label>
+            <input
+              type="text"
+              value={settings.welcome_text_en || ''}
+              onChange={(e) => setSettings({ ...settings, welcome_text_en: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              placeholder="Welcome"
             />
           </div>
 
@@ -270,13 +283,26 @@ export function SettingsPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Buton Yazısı
+              Buton Yazısı (Türkçe)
             </label>
             <input
               type="text"
-              value={settings.button_text}
-              onChange={(e) => setSettings({ ...settings, button_text: e.target.value })}
+              value={settings.button_text_tr || settings.button_text}
+              onChange={(e) => setSettings({ ...settings, button_text_tr: e.target.value, button_text: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Button Text (English)
+            </label>
+            <input
+              type="text"
+              value={settings.button_text_en || ''}
+              onChange={(e) => setSettings({ ...settings, button_text_en: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              placeholder="Go to Menu"
             />
           </div>
 

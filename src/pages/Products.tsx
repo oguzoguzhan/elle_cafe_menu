@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { Product, Settings } from '../lib/supabase';
 import { api } from '../lib/api';
 import { Header } from '../components/Header';
+import { useLanguage } from '../lib/languageContext';
 
 interface ProductsProps {
   categoryId: string;
@@ -14,6 +15,7 @@ interface ProductsProps {
 }
 
 export function Products({ categoryId, breadcrumb, settings, branchId, onBreadcrumbClick, onLogoClick }: ProductsProps) {
+  const { language } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -118,6 +120,8 @@ export function Products({ categoryId, breadcrumb, settings, branchId, onBreadcr
             {products.map((product) => {
               const prices = getPriceDisplay(product);
               const primaryPrice = prices[0];
+              const productName = language === 'en' && product.name_en ? product.name_en : product.name_tr;
+              const productDescription = language === 'en' && product.description_en ? product.description_en : product.description_tr;
 
               return (
                 <button
@@ -140,9 +144,9 @@ export function Products({ categoryId, breadcrumb, settings, branchId, onBreadcr
                         color: settings.product_name_color
                       }}
                     >
-                      {product.name}
+                      {productName}
                     </h3>
-                    {product.description && (
+                    {productDescription && (
                       <p
                         className="mb-3"
                         style={{
@@ -150,7 +154,7 @@ export function Products({ categoryId, breadcrumb, settings, branchId, onBreadcr
                           color: settings.product_description_color
                         }}
                       >
-                        {truncateText(product.description)}
+                        {truncateText(productDescription)}
                       </p>
                     )}
                     {primaryPrice && (
@@ -174,88 +178,94 @@ export function Products({ categoryId, breadcrumb, settings, branchId, onBreadcr
         )}
       </div>
 
-      {selectedProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-              <h2
-                className="font-bold"
-                style={{
-                  fontSize: `${settings.product_name_font_size}px`,
-                  color: settings.product_name_color
-                }}
-              >
-                {selectedProduct.name}
-              </h2>
-              <button
-                onClick={() => setSelectedProduct(null)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
+      {selectedProduct && (() => {
+        const modalProductName = language === 'en' && selectedProduct.name_en ? selectedProduct.name_en : selectedProduct.name_tr;
+        const modalProductDescription = language === 'en' && selectedProduct.description_en ? selectedProduct.description_en : selectedProduct.description_tr;
+        const modalProductWarning = language === 'en' && selectedProduct.warning_en ? selectedProduct.warning_en : selectedProduct.warning_tr;
 
-            <div className="p-6">
-              {selectedProduct.image_url && (
-                <img
-                  src={selectedProduct.image_url}
-                  alt={selectedProduct.name}
-                  className="w-full h-64 object-cover rounded-lg mb-4"
-                />
-              )}
-
-              {selectedProduct.description && (
-                <p
-                  className="mb-6 whitespace-pre-wrap"
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+                <h2
+                  className="font-bold"
                   style={{
-                    fontSize: `${settings.product_description_font_size}px`,
-                    color: settings.product_description_color
+                    fontSize: `${settings.product_name_font_size}px`,
+                    color: settings.product_name_color
                   }}
                 >
-                  {selectedProduct.description}
-                </p>
-              )}
-
-              {selectedProduct.warning && (
-                <div
-                  className="mb-6 p-3 rounded"
-                  style={{
-                    backgroundColor: settings.product_warning_bg_color,
-                    color: settings.product_warning_color,
-                    fontSize: `${settings.product_warning_font_size}px`,
-                  }}
+                  {modalProductName}
+                </h2>
+                <button
+                  onClick={() => setSelectedProduct(null)}
+                  className="text-gray-500 hover:text-gray-700"
                 >
-                  <p className="font-medium whitespace-pre-wrap">
-                    {selectedProduct.warning}
-                  </p>
-                </div>
-              )}
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
 
-              <div className="space-y-2">
-                {getPriceDisplay(selectedProduct).map((price) => (
-                  <div
-                    key={price.label}
-                    className="flex items-center justify-between py-2 border-b border-gray-200"
+              <div className="p-6">
+                {selectedProduct.image_url && (
+                  <img
+                    src={selectedProduct.image_url}
+                    alt={modalProductName}
+                    className="w-full h-64 object-cover rounded-lg mb-4"
+                  />
+                )}
+
+                {modalProductDescription && (
+                  <p
+                    className="mb-6 whitespace-pre-wrap"
+                    style={{
+                      fontSize: `${settings.product_description_font_size}px`,
+                      color: settings.product_description_color
+                    }}
                   >
-                    <span className="text-gray-700 font-medium">
-                      {price.label}
-                    </span>
-                    <span
-                      className="font-bold"
-                      style={{
-                        fontSize: `${settings.product_price_font_size}px`,
-                        color: settings.product_price_color
-                      }}
-                    >
-                      {formatPrice(price.value)}
-                    </span>
+                    {modalProductDescription}
+                  </p>
+                )}
+
+                {modalProductWarning && (
+                  <div
+                    className="mb-6 p-3 rounded"
+                    style={{
+                      backgroundColor: settings.product_warning_bg_color,
+                      color: settings.product_warning_color,
+                      fontSize: `${settings.product_warning_font_size}px`,
+                    }}
+                  >
+                    <p className="font-medium whitespace-pre-wrap">
+                      {modalProductWarning}
+                    </p>
                   </div>
-                ))}
+                )}
+
+                <div className="space-y-2">
+                  {getPriceDisplay(selectedProduct).map((price) => (
+                    <div
+                      key={price.label}
+                      className="flex items-center justify-between py-2 border-b border-gray-200"
+                    >
+                      <span className="text-gray-700 font-medium">
+                        {price.label}
+                      </span>
+                      <span
+                        className="font-bold"
+                        style={{
+                          fontSize: `${settings.product_price_font_size}px`,
+                          color: settings.product_price_color
+                        }}
+                      >
+                        {formatPrice(price.value)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
