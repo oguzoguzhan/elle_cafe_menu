@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Download, Upload, AlertCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { adminApi } from '../../lib/adminApi';
+import { supabase } from '../../lib/supabase';
 
 export function BulkImportPage() {
   const [loading, setLoading] = useState(false);
@@ -18,12 +19,30 @@ export function BulkImportPage() {
   const handleExport = async () => {
     setLoading(true);
     try {
-      const [products, categories] = await Promise.all([
+      const [products, categories, branches, categoryBranches, productBranches] = await Promise.all([
         adminApi.products.getAll(),
         adminApi.categories.getAll(),
+        adminApi.branches.getAll(),
+        supabase.from('category_branches').select('*').then(r => r.data || []),
+        supabase.from('product_branches').select('*').then(r => r.data || []),
       ]);
 
       const categoryMap = new Map(categories.map(c => [c.id, c]));
+      const branchMap = new Map(branches.map(b => [b.id, b]));
+
+      const getCategoryBranches = (categoryId: string) => {
+        return categoryBranches
+          .filter(cb => cb.category_id === categoryId)
+          .map(cb => branchMap.get(cb.branch_id)?.name || '')
+          .join(', ');
+      };
+
+      const getProductBranches = (productId: string) => {
+        return productBranches
+          .filter(pb => pb.product_id === productId)
+          .map(pb => branchMap.get(pb.branch_id)?.name || '')
+          .join(', ');
+      };
 
       const data = products.map(product => {
         const category = categoryMap.get(product.category_id);
@@ -33,15 +52,19 @@ export function BulkImportPage() {
 
         return {
           'ID': product.id,
-          'Kategori': parentCategory?.name || category?.name || '',
-          'Alt Kategori': parentCategory ? category?.name : '',
-          'Ürün Adı': product.name,
-          'Açıklama': product.description || '',
-          'Uyarı': product.warning || '',
+          'Kategori': parentCategory?.name_tr || category?.name_tr || '',
+          'Alt Kategori': parentCategory ? category?.name_tr : '',
+          'Ürün Adı (TR)': product.name_tr,
+          'Ürün Adı (EN)': product.name_en || '',
+          'Açıklama (TR)': product.description_tr || '',
+          'Açıklama (EN)': product.description_en || '',
+          'Uyarı (TR)': product.warning_tr || '',
+          'Uyarı (EN)': product.warning_en || '',
           'Fiyat': product.price_single || '',
           'Küçük Fiyat': product.price_small || '',
           'Orta Fiyat': product.price_medium || '',
           'Büyük Fiyat': product.price_large || '',
+          'Şubeler': getProductBranches(product.id),
           'Sıra': product.sort_order,
           'Durum': product.active ? 'Aktif' : 'Pasif',
           'Resim': product.image_url || '',
@@ -57,12 +80,16 @@ export function BulkImportPage() {
         { wch: 20 },
         { wch: 20 },
         { wch: 30 },
+        { wch: 30 },
+        { wch: 40 },
+        { wch: 40 },
         { wch: 40 },
         { wch: 40 },
         { wch: 10 },
         { wch: 12 },
         { wch: 12 },
         { wch: 12 },
+        { wch: 30 },
         { wch: 8 },
         { wch: 10 },
         { wch: 40 },
@@ -104,8 +131,12 @@ export function BulkImportPage() {
         await Promise.all(allProducts.map(p => adminApi.products.delete(p.id)));
       }
 
-      const categories = await adminApi.categories.getAll();
-      const categoryMap = new Map(categories.map(c => [c.name.toLowerCase(), c]));
+      const [categories, branches] = await Promise.all([
+        adminApi.categories.getAll(),
+        adminApi.branches.getAll(),
+      ]);
+      const categoryMap = new Map(categories.map(c => [c.name_tr.toLowerCase(), c]));
+      const branchMap = new Map(branches.map(b => [b.name.toLowerCase(), b]));
 
       let successCount = 0;
       let errorCount = 0;
@@ -117,9 +148,9 @@ export function BulkImportPage() {
           const mainCategoryName = (row['Kategori'] || '').toString().trim();
           const subCategoryName = (row['Alt Kategori'] || '').toString().trim();
 
-          if (!mainCategoryName || !row['Ürün Adı']) {
+          if (!mainCategoryName || !row['Ürün Adı (TR)']) {
             errorCount++;
-            errors.push(`Satır atlandı: Kategori ve Ürün Adı zorunludur`);
+            errors.push(`Satır atlandı: Kategori ve Ürün Adı (TR) zorunludur`);
             continue;
           }
 
@@ -127,10 +158,10 @@ export function BulkImportPage() {
 
           if (!targetCategory) {
             targetCategory = await adminApi.categories.create({
-              name: mainCategoryName,
+              name_tr: mainCategoryName,
+              name_en: null,
               image_url: null,
               parent_id: null,
-              branch_id: null,
               sort_order: categories.length + 1,
               active: true,
             });
@@ -141,16 +172,16 @@ export function BulkImportPage() {
 
           if (subCategoryName) {
             let subCategory = categories.find(
-              c => c.name.toLowerCase() === subCategoryName.toLowerCase() &&
+              c => c.name_tr.toLowerCase() === subCategoryName.toLowerCase() &&
                    c.parent_id === targetCategory!.id
             );
 
             if (!subCategory) {
               subCategory = await adminApi.categories.create({
-                name: subCategoryName,
+                name_tr: subCategoryName,
+                name_en: null,
                 image_url: null,
                 parent_id: targetCategory.id,
-                branch_id: null,
                 sort_order: categories.length + 1,
                 active: true,
               });
@@ -177,11 +208,18 @@ export function BulkImportPage() {
             }
           }
 
+          const branchesStr = (row['Şubeler'] || '').toString().trim();
+          const branchNames = branchesStr ? branchesStr.split(',').map((b: string) => b.trim()).filter(Boolean) : [];
+          const branchIds = branchNames.map((name: string) => branchMap.get(name.toLowerCase())?.id).filter(Boolean);
+
           const productData = {
             category_id: categoryId,
-            name: row['Ürün Adı'].toString().trim(),
-            description: row['Açıklama'] ? row['Açıklama'].toString() : null,
-            warning: row['Uyarı'] ? row['Uyarı'].toString() : null,
+            name_tr: row['Ürün Adı (TR)'].toString().trim(),
+            name_en: row['Ürün Adı (EN)'] ? row['Ürün Adı (EN)'].toString().trim() : null,
+            description_tr: row['Açıklama (TR)'] ? row['Açıklama (TR)'].toString() : null,
+            description_en: row['Açıklama (EN)'] ? row['Açıklama (EN)'].toString() : null,
+            warning_tr: row['Uyarı (TR)'] ? row['Uyarı (TR)'].toString() : null,
+            warning_en: row['Uyarı (EN)'] ? row['Uyarı (EN)'].toString() : null,
             image_url: row['Resim'] ? row['Resim'].toString() : null,
             price_single: row['Fiyat'] ? parseFloat(row['Fiyat'].toString()) : null,
             price_small: row['Küçük Fiyat'] ? parseFloat(row['Küçük Fiyat'].toString()) : null,
@@ -193,12 +231,31 @@ export function BulkImportPage() {
 
           if (importMode === 'deleteAll') {
             const newProduct = await adminApi.products.create(productData);
+
+            if (branchIds.length > 0) {
+              await Promise.all(
+                branchIds.map(branchId =>
+                  supabase.from('product_branches').insert({ product_id: newProduct.id, branch_id: branchId })
+                )
+              );
+            }
+
             allProducts.push(newProduct);
             successCount++;
           } else {
             if (productId) {
               try {
                 await adminApi.products.update(productId.toString(), productData);
+
+                await supabase.from('product_branches').delete().eq('product_id', productId.toString());
+                if (branchIds.length > 0) {
+                  await Promise.all(
+                    branchIds.map(branchId =>
+                      supabase.from('product_branches').insert({ product_id: productId.toString(), branch_id: branchId })
+                    )
+                  );
+                }
+
                 const existingIndex = allProducts.findIndex(p => p.id === productId.toString());
                 if (existingIndex !== -1) {
                   allProducts[existingIndex] = { ...allProducts[existingIndex], ...productData };
@@ -206,11 +263,29 @@ export function BulkImportPage() {
                 successCount++;
               } catch (updateError) {
                 const newProduct = await adminApi.products.create(productData);
+
+                if (branchIds.length > 0) {
+                  await Promise.all(
+                    branchIds.map(branchId =>
+                      supabase.from('product_branches').insert({ product_id: newProduct.id, branch_id: branchId })
+                    )
+                  );
+                }
+
                 allProducts.push(newProduct);
                 successCount++;
               }
             } else {
               const newProduct = await adminApi.products.create(productData);
+
+              if (branchIds.length > 0) {
+                await Promise.all(
+                  branchIds.map(branchId =>
+                    supabase.from('product_branches').insert({ product_id: newProduct.id, branch_id: branchId })
+                  )
+                );
+              }
+
               allProducts.push(newProduct);
               successCount++;
             }
@@ -258,13 +333,17 @@ export function BulkImportPage() {
             <p className="font-semibold mb-2">Excel Formatı:</p>
             <ul className="list-disc list-inside space-y-1">
               <li>ID (güncellemeler için, yeni kayıtlarda boş bırakın)</li>
-              <li>Kategori (zorunlu) - Ana kategori adı</li>
+              <li>Kategori (zorunlu) - Ana kategori adı (Türkçe)</li>
               <li>Alt Kategori (opsiyonel) - Alt kategori varsa</li>
-              <li>Ürün Adı (zorunlu)</li>
-              <li>Açıklama</li>
-              <li>Uyarı (opsiyonel)</li>
+              <li>Ürün Adı (TR) (zorunlu)</li>
+              <li>Ürün Adı (EN) (opsiyonel)</li>
+              <li>Açıklama (TR)</li>
+              <li>Açıklama (EN)</li>
+              <li>Uyarı (TR)</li>
+              <li>Uyarı (EN)</li>
               <li>Fiyat (tekli fiyat)</li>
               <li>Küçük Fiyat, Orta Fiyat, Büyük Fiyat</li>
+              <li>Şubeler (virgülle ayrılmış şube isimleri)</li>
               <li>Sıra (0 ise otomatik atanır)</li>
               <li>Durum (Aktif/Pasif)</li>
               <li>Resim (URL)</li>
@@ -379,6 +458,8 @@ export function BulkImportPage() {
           <li>• Yeni ürün eklerken ID sütununu boş bırakın</li>
           <li>• Mevcut ürünü güncellemek için ID sütununu doldurun</li>
           <li>• Kategori ve Alt Kategori yoksa otomatik oluşturulur</li>
+          <li>• Şubeler sütunu: Birden fazla şube için virgülle ayırın (örn: "Merkez, Bahçelievler")</li>
+          <li>• Dil alanları: TR zorunlu, EN opsiyonel</li>
           <li>• Sıra değeri 0 ise otomatik sıra numarası atanır</li>
           <li>• Durum sütunu: "Aktif" veya "Pasif" yazılmalı</li>
         </ul>
