@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, X, Upload } from 'lucide-react';
-import { Product, Category, Branch } from '../../lib/supabase';
+import { Product, Category } from '../../lib/supabase';
 import { adminApi } from '../../lib/adminApi';
 import { uploadImage, deleteImage } from '../../lib/imageUpload';
 
@@ -9,18 +9,15 @@ type ProductForm = Omit<Product, 'id' | 'created_at' | 'updated_at'>;
 export function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('');
-  const [filterBranch, setFilterBranch] = useState<string>('');
   const [filterActive, setFilterActive] = useState<string>('all');
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [formData, setFormData] = useState<ProductForm>({
     category_id: '',
-    branch_id: null,
     name: '',
     image_url: null,
     description: null,
@@ -39,19 +36,17 @@ export function ProductsPage() {
 
   useEffect(() => {
     loadProducts();
-  }, [filterCategory, filterBranch, filterActive]);
+  }, [filterCategory, filterActive]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [productsData, categoriesData, branchesData] = await Promise.all([
+      const [productsData, categoriesData] = await Promise.all([
         adminApi.products.getAll(),
         adminApi.categories.getAll(),
-        adminApi.branches.getAll(),
       ]);
       setProducts(productsData);
       setCategories(categoriesData);
-      setBranches(branchesData);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -73,12 +68,7 @@ export function ProductsPage() {
         filters.active = false;
       }
 
-      let data = await adminApi.products.getAll(filters);
-
-      if (filterBranch) {
-        data = data.filter(p => p.branch_id === filterBranch);
-      }
-
+      const data = await adminApi.products.getAll(filters);
       setProducts(data);
     } catch (error) {
       console.error('Error loading products:', error);
@@ -125,7 +115,6 @@ export function ProductsPage() {
     setEditingId(product.id);
     setFormData({
       category_id: product.category_id,
-      branch_id: product.branch_id,
       name: product.name,
       image_url: product.image_url,
       description: product.description,
@@ -194,7 +183,6 @@ export function ProductsPage() {
     setEditingId(null);
     setFormData({
       category_id: '',
-      branch_id: null,
       name: '',
       image_url: null,
       description: null,
@@ -211,12 +199,6 @@ export function ProductsPage() {
   const getCategoryName = (categoryId: string) => {
     const category = categories.find(c => c.id === categoryId);
     return category?.name || 'Bilinmeyen';
-  };
-
-  const getBranchName = (branchId: string | null) => {
-    if (!branchId) return 'Tüm Şubeler';
-    const branch = branches.find(b => b.id === branchId);
-    return branch?.name || 'Bilinmeyen';
   };
 
   const truncateText = (text: string, maxLength: number = 60) => {
@@ -352,23 +334,8 @@ export function ProductsPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Şube
-          </label>
-          <select
-            value={filterBranch}
-            onChange={(e) => setFilterBranch(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-          >
-            <option value="">Tüm Şubeler</option>
-            {branches.map(branch => (
-              <option key={branch.id} value={branch.id}>{branch.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
+      <div className="flex gap-4">
+        <div className="flex-1">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Kategori
           </label>
@@ -383,7 +350,7 @@ export function ProductsPage() {
             ))}
           </select>
         </div>
-        <div>
+        <div className="flex-1">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Durum
           </label>
@@ -436,11 +403,8 @@ export function ProductsPage() {
             )}
             <div className="p-4">
               <h3 className="font-semibold text-gray-900 mb-1">{product.name}</h3>
-              <p className="text-sm text-gray-600 mb-1">
+              <p className="text-sm text-gray-600 mb-2">
                 {getCategoryName(product.category_id)}
-              </p>
-              <p className="text-sm text-blue-600 mb-2">
-                {getBranchName(product.branch_id)}
               </p>
               <p className="text-sm text-gray-600 mb-2 min-h-[20px] truncate">
                 {product.description || ''}
@@ -491,22 +455,6 @@ export function ProductsPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Şube
-                </label>
-                <select
-                  value={formData.branch_id || ''}
-                  onChange={(e) => setFormData({ ...formData, branch_id: e.target.value || null })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                >
-                  <option value="">Tüm Şubeler</option>
-                  {branches.map(branch => (
-                    <option key={branch.id} value={branch.id}>{branch.name}</option>
-                  ))}
-                </select>
-              </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Kategori
