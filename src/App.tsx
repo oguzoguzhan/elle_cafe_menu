@@ -8,6 +8,7 @@ import { Settings, Branch } from './lib/supabase';
 import { api } from './lib/api';
 import { adminApi } from './lib/adminApi';
 import { detectBranchFromHostname } from './lib/branchDetection';
+import { useLanguage } from './lib/languageContext';
 
 type View = 'landing' | 'categories' | 'products' | 'admin-login' | 'admin-dashboard';
 
@@ -35,12 +36,13 @@ const isValidBreadcrumb = (breadcrumb: unknown): breadcrumb is Array<{ id: strin
 };
 
 function App() {
+  const { language } = useLanguage();
   const [view, setView] = useState<View>('landing');
   const [settings, setSettings] = useState<Settings | null>(null);
   const [currentBranch, setCurrentBranch] = useState<Branch | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [breadcrumb, setBreadcrumb] = useState<Array<{ id: string | null; name: string }>>([]);
-  const [categoryBreadcrumb, setCategoryBreadcrumb] = useState<Array<{ id: string | null; name: string }>>([{ id: null, name: 'Ana Kategoriler' }]);
+  const [categoryBreadcrumb, setCategoryBreadcrumb] = useState<Array<{ id: string | null; name: string }>>([{ id: null, name: language === 'en' ? 'Main Categories' : 'Ana Kategoriler' }]);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
 
   useEffect(() => {
@@ -109,7 +111,7 @@ function App() {
   }, [view, isAdminAuthenticated]);
 
   const handleEnterMenu = () => {
-    const newBreadcrumb = [{ id: null, name: 'Ana Kategoriler' }];
+    const newBreadcrumb = [{ id: null, name: language === 'en' ? 'Main Categories' : 'Ana Kategoriler' }];
     setCategoryBreadcrumb(newBreadcrumb);
     setView('categories');
     const state: HistoryState = { view: 'categories', categoryBreadcrumb: newBreadcrumb };

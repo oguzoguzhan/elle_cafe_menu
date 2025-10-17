@@ -43,11 +43,12 @@ export function Categories({ settings, branchId, breadcrumb, onCategorySelect, o
     }
 
     const hasSubcategories = await api.categories.hasSubcategories(category.id);
+    const displayName = language === 'en' && category.name_en ? category.name_en : category.name_tr;
 
     if (hasSubcategories) {
-      onBreadcrumbUpdate([...breadcrumb, { id: category.id, name: category.name }]);
+      onBreadcrumbUpdate([...breadcrumb, { id: category.id, name: displayName }]);
     } else {
-      const productBreadcrumb = [...breadcrumb, { id: category.id, name: category.name }];
+      const productBreadcrumb = [...breadcrumb, { id: category.id, name: displayName }];
       onCategorySelect(category.id, productBreadcrumb);
     }
   };
