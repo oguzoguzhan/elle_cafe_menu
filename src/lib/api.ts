@@ -56,6 +56,9 @@ export const api = {
         categories = categories.filter(cat =>
           !categoriesWithBranches.has(cat.id) || branchCategoryIds.has(cat.id)
         );
+      } else if (!branchId && categories.length > 0) {
+        // branchId null ise, tüm kategorileri göster
+        return categories;
       }
 
       return categories;
@@ -107,6 +110,9 @@ export const api = {
         products = products.filter(prod =>
           !productsWithBranches.has(prod.id) || branchProductIds.has(prod.id)
         );
+      } else if (!branchId && products.length > 0) {
+        // branchId null ise, tüm ürünleri göster
+        return products;
       }
 
       return products;
