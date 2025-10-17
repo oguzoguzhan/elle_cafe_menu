@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Settings } from '../lib/api';
+import { Settings } from '../lib/supabase';
 import { api } from '../lib/api';
 
 interface LandingProps {

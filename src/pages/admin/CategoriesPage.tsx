@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, X, Upload } from 'lucide-react';
-import { Category } from '../../lib/api';
+import { Category } from '../../lib/supabase';
 import { adminApi } from '../../lib/adminApi';
 import { uploadImage, deleteImage } from '../../lib/imageUpload';
 
@@ -11,11 +11,13 @@ export function CategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<CategoryForm>({
     name: '',
     image_url: null,
+    parent_id: null,
     sort_order: 0,
+    active: true,
   });
 
   useEffect(() => {

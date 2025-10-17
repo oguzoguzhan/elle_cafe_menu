@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Upload, Trash2 } from 'lucide-react';
-import { Settings } from '../../lib/api';
+import { Settings } from '../../lib/supabase';
 import { api } from '../../lib/api';
 import { adminApi } from '../../lib/adminApi';
 import { uploadImage, deleteImage } from '../../lib/imageUpload';

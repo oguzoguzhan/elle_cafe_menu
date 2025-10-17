@@ -1,5 +1,5 @@
 import { ArrowLeft } from 'lucide-react';
-import { Settings } from '../lib/api';
+import { Settings } from '../lib/supabase';
 
 interface HeaderProps {
   settings: Settings;

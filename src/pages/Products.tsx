@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, X } from 'lucide-react';
-import { Product, Settings } from '../lib/api';
+import { Product, Settings } from '../lib/supabase';
 import { api } from '../lib/api';
 import { Header } from '../components/Header';
 
 interface ProductsProps {
-  categoryId: number;
-  breadcrumb: Array<{ id: number | null; name: string }>;
+  categoryId: string;
+  breadcrumb: Array<{ id: string | null; name: string }>;
   settings: Settings;
-  onBreadcrumbClick: (breadcrumb: Array<{ id: number | null; name: string }>) => void;
+  onBreadcrumbClick: (breadcrumb: Array<{ id: string | null; name: string }>) => void;
   onLogoClick: () => void;
 }
 

@@ -1,87 +1,72 @@
-export interface Settings {
-  id: number;
-  logo_url: string | null;
-  header_logo_url: string | null;
-  site_title: string;
-  header_bg_color: string;
-  header_text_color: string;
-  landing_bg_color: string;
-  categories_bg_color: string;
-  products_bg_color: string;
-  nav_bg_color: string;
-  nav_text_color: string;
-  nav_hover_bg_color: string;
-  category_grid_cols: number;
-  category_text_color: string;
-  product_grid_cols: number;
-  product_name_color: string;
-  product_price_color: string;
-  product_description_color: string;
-  product_warning_color: string;
-  product_warning_bg_color: string;
-  product_image_width: number;
-  back_button_bg_color: string;
-  back_button_text_color: string;
-  back_button_hover_bg_color: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface Category {
-  id: number;
-  name: string;
-  image_url: string | null;
-  sort_order: number;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface Product {
-  id: number;
-  category_id: number;
-  name: string;
-  description: string | null;
-  image_url: string | null;
-  price: number | null;
-  warning_text: string | null;
-  sort_order: number;
-  created_at?: string;
-  updated_at?: string;
-}
-
-async function apiCall(endpoint: string, options: RequestInit = {}) {
-  const response = await fetch(`/api/${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(error.error || 'Request failed');
-  }
-
-  return response.json();
-}
+import { supabase, Settings, Category, Product } from './supabase';
 
 export const api = {
   settings: {
     async get(): Promise<Settings | null> {
-      return apiCall('settings');
+      const { data, error } = await supabase
+        .from('settings')
+        .select('*')
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
     },
   },
 
   categories: {
-    async getAll(): Promise<Category[]> {
-      return apiCall('categories');
+    async getAll(parentId?: string | null): Promise<Category[]> {
+      let query = supabase
+        .from('categories')
+        .select('*')
+        .eq('active', true)
+        .order('sort_order', { ascending: true });
+
+      if (parentId === null) {
+        query = query.is('parent_id', null);
+      } else if (parentId) {
+        query = query.eq('parent_id', parentId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+
+    async hasSubcategories(categoryId: string): Promise<boolean> {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('parent_id', categoryId)
+        .eq('active', true)
+        .limit(1);
+
+      if (error) throw error;
+      return (data?.length || 0) > 0;
     },
   },
 
   products: {
-    async getByCategoryId(categoryId: number): Promise<Product[]> {
-      return apiCall(`products?category_id=${categoryId}`);
+    async getByCategoryId(categoryId: string): Promise<Product[]> {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('category_id', categoryId)
+        .eq('active', true)
+        .order('sort_order', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    },
+
+    async getById(id: string): Promise<Product | null> {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
     },
   },
 };

@@ -81,7 +81,7 @@ export function Login({ onLogin }: LoginProps) {
 
         <div className="mt-6 text-sm text-gray-600 text-center">
           <p>Varsayılan hesap:</p>
-          <p>Kullanıcı: admin / Şifre: admin123</p>
+          <p>Kullanıcı: admin / Şifre: 123456</p>
         </div>
       </div>
     </div>

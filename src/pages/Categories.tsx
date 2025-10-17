@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Category, Settings } from '../lib/api';
+import { Category, Settings } from '../lib/supabase';
 import { api } from '../lib/api';
 import { Header } from '../components/Header';
 
 interface CategoriesProps {
   settings: Settings;
-  breadcrumb: Array<{ id: number | null; name: string }>;
-  onCategorySelect: (categoryId: number, breadcrumb: Array<{ id: number | null; name: string }>) => void;
-  onBreadcrumbUpdate: (breadcrumb: Array<{ id: number | null; name: string }>) => void;
+  breadcrumb: Array<{ id: string | null; name: string }>;
+  onCategorySelect: (categoryId: string, breadcrumb: Array<{ id: string | null; name: string }>) => void;
+  onBreadcrumbUpdate: (breadcrumb: Array<{ id: string | null; name: string }>) => void;
   onLogoClick: () => void;
 }
 
@@ -20,10 +20,10 @@ export function Categories({ settings, breadcrumb, onCategorySelect, onBreadcrum
     loadCategories(parentId);
   }, [breadcrumb]);
 
-  const loadCategories = async (parentId: number | null) => {
+  const loadCategories = async (parentId: string | null) => {
     setLoading(true);
     try {
-      const data = await api.categories.getAll();
+      const data = await api.categories.getAll(parentId);
       setCategories(data);
     } catch (error) {
       console.error('Error loading categories:', error);

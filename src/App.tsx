@@ -4,7 +4,7 @@ import { Categories } from './pages/Categories';
 import { Products } from './pages/Products';
 import { Login } from './pages/admin/Login';
 import { Dashboard } from './pages/admin/Dashboard';
-import { Settings } from './lib/api';
+import { Settings } from './lib/supabase';
 import { api } from './lib/api';
 import { adminApi } from './lib/adminApi';
 
@@ -13,9 +13,9 @@ type View = 'landing' | 'categories' | 'products' | 'admin-login' | 'admin-dashb
 function App() {
   const [view, setView] = useState<View>('landing');
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number>(0);
-  const [breadcrumb, setBreadcrumb] = useState<Array<{ id: number | null; name: string }>>([]);
-  const [categoryBreadcrumb, setCategoryBreadcrumb] = useState<Array<{ id: number | null; name: string }>>([{ id: null, name: 'Ana Kategoriler' }]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [breadcrumb, setBreadcrumb] = useState<Array<{ id: string | null; name: string }>>([]);
+  const [categoryBreadcrumb, setCategoryBreadcrumb] = useState<Array<{ id: string | null; name: string }>>([{ id: null, name: 'Ana Kategoriler' }]);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
 
   useEffect(() => {
@@ -37,9 +37,8 @@ function App() {
     }
   };
 
-  const checkAdminAuth = async () => {
-    const isAuth = await adminApi.auth.isAuthenticated();
-    setIsAdminAuthenticated(isAuth);
+  const checkAdminAuth = () => {
+    setIsAdminAuthenticated(adminApi.auth.isAuthenticated());
   };
 
   useEffect(() => {
@@ -53,7 +52,7 @@ function App() {
     setView('categories');
   };
 
-  const handleCategorySelect = (categoryId: number, breadcrumb: Array<{ id: number | null; name: string }>) => {
+  const handleCategorySelect = (categoryId: string, breadcrumb: Array<{ id: string | null; name: string }>) => {
     setSelectedCategoryId(categoryId);
     setBreadcrumb(breadcrumb);
     setView('products');
@@ -64,7 +63,7 @@ function App() {
     setView('categories');
   };
 
-  const handleBreadcrumbClick = (clickedBreadcrumb: Array<{ id: number | null; name: string }>) => {
+  const handleBreadcrumbClick = (clickedBreadcrumb: Array<{ id: string | null; name: string }>) => {
     setCategoryBreadcrumb(clickedBreadcrumb);
     setView('categories');
   };
