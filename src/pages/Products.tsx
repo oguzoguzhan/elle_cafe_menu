@@ -8,23 +8,24 @@ interface ProductsProps {
   categoryId: string;
   breadcrumb: Array<{ id: string | null; name: string }>;
   settings: Settings;
+  branchId: string | null;
   onBreadcrumbClick: (breadcrumb: Array<{ id: string | null; name: string }>) => void;
   onLogoClick: () => void;
 }
 
-export function Products({ categoryId, breadcrumb, settings, onBreadcrumbClick, onLogoClick }: ProductsProps) {
+export function Products({ categoryId, breadcrumb, settings, branchId, onBreadcrumbClick, onLogoClick }: ProductsProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadProducts();
-  }, [categoryId]);
+  }, [categoryId, branchId]);
 
   const loadProducts = async () => {
     setLoading(true);
     try {
-      const data = await api.products.getByCategoryId(categoryId);
+      const data = await api.products.getByCategoryId(categoryId, branchId);
       setProducts(data);
     } catch (error) {
       console.error('Error loading products:', error);

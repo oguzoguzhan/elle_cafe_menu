@@ -151,7 +151,7 @@ function App() {
   }
 
   if (view === 'products') {
-    return <Products categoryId={selectedCategoryId} breadcrumb={breadcrumb} settings={settings} onBreadcrumbClick={handleBreadcrumbClick} onLogoClick={handleLogoClick} />;
+    return <Products categoryId={selectedCategoryId} breadcrumb={breadcrumb} settings={settings} branchId={currentBranch?.id || null} onBreadcrumbClick={handleBreadcrumbClick} onLogoClick={handleLogoClick} />;
   }
 
   return null;

@@ -21,10 +21,6 @@ export const api = {
         .eq('active', true)
         .order('sort_order', { ascending: true });
 
-      if (branchId) {
-        query = query.eq('branch_id', branchId);
-      }
-
       if (parentId === null) {
         query = query.is('parent_id', null);
       } else if (parentId) {
@@ -33,7 +29,36 @@ export const api = {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+
+      let categories = data || [];
+
+      if (branchId && categories.length > 0) {
+        const categoryIds = categories.map(c => c.id);
+        const { data: branchData } = await supabase
+          .from('category_branches')
+          .select('category_id')
+          .eq('branch_id', branchId)
+          .in('category_id', categoryIds);
+
+        const branchCategoryIds = new Set(branchData?.map(b => b.category_id) || []);
+
+        categories = categories.filter(cat =>
+          branchCategoryIds.size === 0 || branchCategoryIds.has(cat.id)
+        );
+
+        const { data: allBranchData } = await supabase
+          .from('category_branches')
+          .select('category_id')
+          .in('category_id', categoryIds);
+
+        const categoriesWithBranches = new Set(allBranchData?.map(b => b.category_id) || []);
+
+        categories = categories.filter(cat =>
+          !categoriesWithBranches.has(cat.id) || branchCategoryIds.has(cat.id)
+        );
+      }
+
+      return categories;
     },
 
     async hasSubcategories(categoryId: string): Promise<boolean> {
@@ -50,7 +75,7 @@ export const api = {
   },
 
   products: {
-    async getByCategoryId(categoryId: string): Promise<Product[]> {
+    async getByCategoryId(categoryId: string, branchId?: string | null): Promise<Product[]> {
       const { data, error } = await supabase
         .from('products')
         .select('*')
@@ -59,7 +84,32 @@ export const api = {
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
-      return data || [];
+
+      let products = data || [];
+
+      if (branchId && products.length > 0) {
+        const productIds = products.map(p => p.id);
+        const { data: branchData } = await supabase
+          .from('product_branches')
+          .select('product_id')
+          .eq('branch_id', branchId)
+          .in('product_id', productIds);
+
+        const branchProductIds = new Set(branchData?.map(b => b.product_id) || []);
+
+        const { data: allBranchData } = await supabase
+          .from('product_branches')
+          .select('product_id')
+          .in('product_id', productIds);
+
+        const productsWithBranches = new Set(allBranchData?.map(b => b.product_id) || []);
+
+        products = products.filter(prod =>
+          !productsWithBranches.has(prod.id) || branchProductIds.has(prod.id)
+        );
+      }
+
+      return products;
     },
 
     async getById(id: string): Promise<Product | null> {
