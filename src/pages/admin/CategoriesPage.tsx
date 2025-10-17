@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, X, Upload } from 'lucide-react';
-import { Category } from '../../lib/supabase';
+import { Category, Branch } from '../../lib/supabase';
 import { adminApi } from '../../lib/adminApi';
 import { uploadImage, deleteImage } from '../../lib/imageUpload';
+import { supabase } from '../../lib/supabase';
 
 type CategoryForm = Omit<Category, 'id' | 'created_at' | 'updated_at'>;
 
 export function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -16,12 +18,14 @@ export function CategoriesPage() {
     name: '',
     image_url: null,
     parent_id: null,
+    branch_id: null,
     sort_order: 0,
     active: true,
   });
 
   useEffect(() => {
     loadCategories();
+    loadBranches();
   }, []);
 
   const loadCategories = async () => {
@@ -33,6 +37,20 @@ export function CategoriesPage() {
       console.error('Error loading categories:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadBranches = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('branches')
+        .select('*')
+        .order('sort_order', { ascending: true });
+
+      if (error) throw error;
+      setBranches(data || []);
+    } catch (error) {
+      console.error('Error loading branches:', error);
     }
   };
 
@@ -66,6 +84,7 @@ export function CategoriesPage() {
       name: category.name,
       image_url: category.image_url,
       parent_id: category.parent_id,
+      branch_id: category.branch_id,
       sort_order: category.sort_order,
       active: category.active,
     });
@@ -128,6 +147,7 @@ export function CategoriesPage() {
       name: '',
       image_url: null,
       parent_id: null,
+      branch_id: null,
       sort_order: 0,
       active: true,
     });
@@ -181,6 +201,14 @@ export function CategoriesPage() {
                 <div>
                   <h3 className="font-semibold text-gray-900">{category.name}</h3>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
+                    {category.branch_id && (
+                      <>
+                        <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
+                          {branches.find(b => b.id === category.branch_id)?.name}
+                        </span>
+                        <span>•</span>
+                      </>
+                    )}
                     <span>Sıra: {category.sort_order}</span>
                     <span>•</span>
                     <span className={category.active ? 'text-green-600' : 'text-red-600'}>
@@ -220,6 +248,14 @@ export function CategoriesPage() {
                       <div>
                         <h4 className="font-medium text-gray-900">{child.name}</h4>
                         <div className="flex items-center gap-2 text-sm text-gray-600">
+                          {child.branch_id && (
+                            <>
+                              <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
+                                {branches.find(b => b.id === child.branch_id)?.name}
+                              </span>
+                              <span>•</span>
+                            </>
+                          )}
                           <span>Sıra: {child.sort_order}</span>
                           <span>•</span>
                           <span className={child.active ? 'text-green-600' : 'text-red-600'}>
@@ -314,6 +350,25 @@ export function CategoriesPage() {
                     className="hidden"
                   />
                 </label>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Şube
+                </label>
+                <select
+                  value={formData.branch_id || ''}
+                  onChange={(e) => setFormData({ ...formData, branch_id: e.target.value || null })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                >
+                  <option value="">Tüm Şubeler</option>
+                  {branches.map(branch => (
+                    <option key={branch.id} value={branch.id}>{branch.name}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Şube seçilirse sadece o şubenin subdomain'inde görünür
+                </p>
               </div>
 
               <div>

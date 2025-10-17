@@ -71,10 +71,6 @@ function App() {
     setView('products');
   };
 
-  const handleBackToCategories = () => {
-    setCategoryBreadcrumb([{ id: null, name: 'Ana Kategoriler' }]);
-    setView('categories');
-  };
 
   const handleBreadcrumbClick = (clickedBreadcrumb: Array<{ id: string | null; name: string }>) => {
     setCategoryBreadcrumb(clickedBreadcrumb);
@@ -119,7 +115,7 @@ function App() {
   }
 
   if (view === 'products') {
-    return <Products categoryId={selectedCategoryId} branchId={currentBranch?.id || null} breadcrumb={breadcrumb} settings={settings} onBreadcrumbClick={handleBreadcrumbClick} onLogoClick={handleLogoClick} />;
+    return <Products categoryId={selectedCategoryId} breadcrumb={breadcrumb} settings={settings} onBreadcrumbClick={handleBreadcrumbClick} onLogoClick={handleLogoClick} />;
   }
 
   return null;

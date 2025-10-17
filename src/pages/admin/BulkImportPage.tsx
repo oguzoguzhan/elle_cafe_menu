@@ -130,6 +130,7 @@ export function BulkImportPage() {
               name: mainCategoryName,
               image_url: null,
               parent_id: null,
+              branch_id: null,
               sort_order: categories.length + 1,
               active: true,
             });
@@ -149,6 +150,7 @@ export function BulkImportPage() {
                 name: subCategoryName,
                 image_url: null,
                 parent_id: targetCategory.id,
+                branch_id: null,
                 sort_order: categories.length + 1,
                 active: true,
               });

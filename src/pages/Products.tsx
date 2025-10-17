@@ -1,19 +1,18 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Product, Settings } from '../lib/supabase';
 import { api } from '../lib/api';
 import { Header } from '../components/Header';
 
 interface ProductsProps {
   categoryId: string;
-  branchId: string | null;
   breadcrumb: Array<{ id: string | null; name: string }>;
   settings: Settings;
   onBreadcrumbClick: (breadcrumb: Array<{ id: string | null; name: string }>) => void;
   onLogoClick: () => void;
 }
 
-export function Products({ categoryId, branchId, breadcrumb, settings, onBreadcrumbClick, onLogoClick }: ProductsProps) {
+export function Products({ categoryId, breadcrumb, settings, onBreadcrumbClick, onLogoClick }: ProductsProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);

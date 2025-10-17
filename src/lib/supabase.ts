@@ -52,6 +52,7 @@ export type Category = {
   name: string;
   image_url: string | null;
   parent_id: string | null;
+  branch_id: string | null;
   sort_order: number;
   active: boolean;
   created_at: string;
