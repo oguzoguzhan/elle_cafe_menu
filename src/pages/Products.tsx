@@ -4,6 +4,7 @@ import { Product, Settings } from '../lib/supabase';
 import { api } from '../lib/api';
 import { Header } from '../components/Header';
 import { useLanguage } from '../lib/languageContext';
+import { supabase } from '../lib/supabase';
 
 interface ProductsProps {
   categoryId: string;
@@ -23,6 +24,36 @@ export function Products({ categoryId, breadcrumb, settings, branchId, onBreadcr
   useEffect(() => {
     loadProducts();
   }, [categoryId, branchId]);
+
+  useEffect(() => {
+    updateBreadcrumbLanguage();
+  }, [language]);
+
+  const updateBreadcrumbLanguage = async () => {
+    const updatedBreadcrumb = await Promise.all(
+      breadcrumb.map(async (item) => {
+        if (item.id === null) {
+          return { id: null, name: language === 'en' ? 'Main Categories' : 'Ana Kategoriler' };
+        }
+        try {
+          const { data } = await supabase
+            .from('categories')
+            .select('name_tr, name_en')
+            .eq('id', item.id)
+            .maybeSingle();
+
+          if (data) {
+            const name = language === 'en' && data.name_en ? data.name_en : data.name_tr;
+            return { id: item.id, name };
+          }
+          return item;
+        } catch {
+          return item;
+        }
+      })
+    );
+    onBreadcrumbClick(updatedBreadcrumb);
+  };
 
   const loadProducts = async () => {
     setLoading(true);

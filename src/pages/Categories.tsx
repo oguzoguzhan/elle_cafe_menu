@@ -3,6 +3,7 @@ import { Category, Settings } from '../lib/supabase';
 import { api } from '../lib/api';
 import { Header } from '../components/Header';
 import { useLanguage } from '../lib/languageContext';
+import { supabase } from '../lib/supabase';
 
 interface CategoriesProps {
   settings: Settings;
@@ -22,6 +23,36 @@ export function Categories({ settings, branchId, breadcrumb, onCategorySelect, o
     const parentId = breadcrumb[breadcrumb.length - 1].id;
     loadCategories(parentId);
   }, [breadcrumb, branchId]);
+
+  useEffect(() => {
+    updateBreadcrumbLanguage();
+  }, [language]);
+
+  const updateBreadcrumbLanguage = async () => {
+    const updatedBreadcrumb = await Promise.all(
+      breadcrumb.map(async (item) => {
+        if (item.id === null) {
+          return { id: null, name: language === 'en' ? 'Main Categories' : 'Ana Kategoriler' };
+        }
+        try {
+          const { data } = await supabase
+            .from('categories')
+            .select('name_tr, name_en')
+            .eq('id', item.id)
+            .maybeSingle();
+
+          if (data) {
+            const name = language === 'en' && data.name_en ? data.name_en : data.name_tr;
+            return { id: item.id, name };
+          }
+          return item;
+        } catch {
+          return item;
+        }
+      })
+    );
+    onBreadcrumbUpdate(updatedBreadcrumb);
+  };
 
   const loadCategories = async (parentId: string | null) => {
     setLoading(true);
