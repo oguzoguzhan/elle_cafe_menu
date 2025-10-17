@@ -8,24 +8,27 @@ interface HeaderProps {
   onLogoClick: () => void;
   showBackButton?: boolean;
   onBackClick?: () => void;
+  showLanguageSelector?: boolean;
 }
 
-export function Header({ settings, onLogoClick, showBackButton = false, onBackClick }: HeaderProps) {
+export function Header({ settings, onLogoClick, showBackButton = false, onBackClick, showLanguageSelector = false }: HeaderProps) {
   const { language } = useLanguage();
   const backButtonText = language === 'en' ? 'Back' : 'Geri';
 
   return (
     <>
-      <div
-        className="sticky top-0 z-20 border-b border-gray-200"
-        style={{ backgroundColor: settings.language_bar_bg_color }}
-      >
-        <div className="max-w-4xl mx-auto px-4 py-2 flex justify-end">
-          <LanguageSelector />
+      {showLanguageSelector && (
+        <div
+          className="sticky top-0 z-20 border-b border-gray-200"
+          style={{ backgroundColor: settings.language_bar_bg_color }}
+        >
+          <div className="max-w-4xl mx-auto px-4 py-2 flex justify-end">
+            <LanguageSelector />
+          </div>
         </div>
-      </div>
+      )}
       <header
-        className="sticky top-[48px] z-10 shadow-sm flex items-center justify-center relative"
+        className={showLanguageSelector ? "sticky top-[48px] z-10 shadow-sm flex items-center justify-center relative" : "sticky top-0 z-10 shadow-sm flex items-center justify-center relative"}
         style={{
           backgroundColor: settings.header_bg_color,
           height: `${settings.header_height}px`,

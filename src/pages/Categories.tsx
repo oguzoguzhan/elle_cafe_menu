@@ -122,6 +122,7 @@ export function Categories({ settings, branchId, breadcrumb, onCategorySelect, o
         onLogoClick={onLogoClick}
         showBackButton={isSubcategory}
         onBackClick={handleBack}
+        showLanguageSelector={false}
       />
 
       <div className="shadow-sm" style={{ backgroundColor: settings.nav_bg_color }}>

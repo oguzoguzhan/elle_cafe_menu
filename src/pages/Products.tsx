@@ -114,6 +114,7 @@ export function Products({ categoryId, breadcrumb, settings, branchId, onBreadcr
         onLogoClick={onLogoClick}
         showBackButton={true}
         onBackClick={handleBack}
+        showLanguageSelector={false}
       />
 
       <div className="shadow-sm" style={{ backgroundColor: settings.nav_bg_color }}>
