@@ -34,6 +34,12 @@ export function Categories({ settings, branchId, breadcrumb, onCategorySelect, o
   };
 
   const handleCategoryClick = async (category: Category) => {
+    // Input validation
+    if (!category || !category.id || typeof category.id !== 'string' || !category.name || typeof category.name !== 'string') {
+      console.error('Invalid category data');
+      return;
+    }
+
     const hasSubcategories = await api.categories.hasSubcategories(category.id);
 
     if (hasSubcategories) {
@@ -45,12 +51,17 @@ export function Categories({ settings, branchId, breadcrumb, onCategorySelect, o
   };
 
   const handleBreadcrumbClick = (index: number) => {
+    // Validate index
+    if (typeof index !== 'number' || index < 0 || index >= breadcrumb.length) {
+      console.error('Invalid breadcrumb index');
+      return;
+    }
     const newBreadcrumb = breadcrumb.slice(0, index + 1);
     onBreadcrumbUpdate(newBreadcrumb);
   };
 
   const handleBack = () => {
-    if (breadcrumb.length > 1) {
+    if (breadcrumb && breadcrumb.length > 1) {
       const newBreadcrumb = breadcrumb.slice(0, -1);
       onBreadcrumbUpdate(newBreadcrumb);
     }

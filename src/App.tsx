@@ -11,6 +11,29 @@ import { detectBranchFromHostname } from './lib/branchDetection';
 
 type View = 'landing' | 'categories' | 'products' | 'admin-login' | 'admin-dashboard';
 
+interface HistoryState {
+  view: View;
+  categoryBreadcrumb?: Array<{ id: string | null; name: string }>;
+  selectedCategoryId?: string;
+  breadcrumb?: Array<{ id: string | null; name: string }>;
+}
+
+const isValidView = (view: unknown): view is View => {
+  return typeof view === 'string' && ['landing', 'categories', 'products', 'admin-login', 'admin-dashboard'].includes(view);
+};
+
+const isValidBreadcrumb = (breadcrumb: unknown): breadcrumb is Array<{ id: string | null; name: string }> => {
+  if (!Array.isArray(breadcrumb)) return false;
+  return breadcrumb.every(item =>
+    item &&
+    typeof item === 'object' &&
+    'id' in item &&
+    'name' in item &&
+    (item.id === null || typeof item.id === 'string') &&
+    typeof item.name === 'string'
+  );
+};
+
 function App() {
   const [view, setView] = useState<View>('landing');
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -31,16 +54,22 @@ function App() {
     }
 
     const handlePopState = () => {
-      const state = window.history.state;
-      if (state) {
-        setView(state.view);
-        if (state.categoryBreadcrumb) {
+      const state = window.history.state as HistoryState | null;
+      if (state && typeof state === 'object') {
+        // Validate view
+        if (isValidView(state.view)) {
+          setView(state.view);
+        }
+        // Validate and set categoryBreadcrumb
+        if (state.categoryBreadcrumb && isValidBreadcrumb(state.categoryBreadcrumb)) {
           setCategoryBreadcrumb(state.categoryBreadcrumb);
         }
-        if (state.selectedCategoryId) {
+        // Validate and set selectedCategoryId
+        if (state.selectedCategoryId && typeof state.selectedCategoryId === 'string') {
           setSelectedCategoryId(state.selectedCategoryId);
         }
-        if (state.breadcrumb) {
+        // Validate and set breadcrumb
+        if (state.breadcrumb && isValidBreadcrumb(state.breadcrumb)) {
           setBreadcrumb(state.breadcrumb);
         }
       }
@@ -83,38 +112,30 @@ function App() {
     const newBreadcrumb = [{ id: null, name: 'Ana Kategoriler' }];
     setCategoryBreadcrumb(newBreadcrumb);
     setView('categories');
-    window.history.pushState(
-      { view: 'categories', categoryBreadcrumb: newBreadcrumb },
-      '',
-      ''
-    );
+    const state: HistoryState = { view: 'categories', categoryBreadcrumb: newBreadcrumb };
+    window.history.pushState(state, '', '');
   };
 
   const handleCategorySelect = (categoryId: string, breadcrumb: Array<{ id: string | null; name: string }>) => {
     setSelectedCategoryId(categoryId);
     setBreadcrumb(breadcrumb);
     setView('products');
-    window.history.pushState(
-      { view: 'products', selectedCategoryId: categoryId, breadcrumb },
-      '',
-      ''
-    );
+    const state: HistoryState = { view: 'products', selectedCategoryId: categoryId, breadcrumb };
+    window.history.pushState(state, '', '');
   };
 
 
   const handleBreadcrumbClick = (clickedBreadcrumb: Array<{ id: string | null; name: string }>) => {
     setCategoryBreadcrumb(clickedBreadcrumb);
     setView('categories');
-    window.history.pushState(
-      { view: 'categories', categoryBreadcrumb: clickedBreadcrumb },
-      '',
-      ''
-    );
+    const state: HistoryState = { view: 'categories', categoryBreadcrumb: clickedBreadcrumb };
+    window.history.pushState(state, '', '');
   };
 
   const handleLogoClick = () => {
     setView('landing');
-    window.history.pushState({ view: 'landing' }, '', '/');
+    const state: HistoryState = { view: 'landing' };
+    window.history.pushState(state, '', '/');
   };
 
   const handleAdminLogin = () => {

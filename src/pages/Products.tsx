@@ -40,8 +40,10 @@ export function Products({ categoryId, breadcrumb, settings, branchId, onBreadcr
   };
 
   const handleBack = () => {
-    const newBreadcrumb = breadcrumb.slice(0, -1);
-    onBreadcrumbClick(newBreadcrumb);
+    if (breadcrumb && breadcrumb.length > 1) {
+      const newBreadcrumb = breadcrumb.slice(0, -1);
+      onBreadcrumbClick(newBreadcrumb);
+    }
   };
 
   const formatPrice = (price: number | null) => {
