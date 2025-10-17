@@ -2,6 +2,16 @@ import { supabase, Settings, Category, Product } from './supabase';
 
 const ADMIN_SESSION_KEY = 'admin_session';
 
+interface DatabaseConfig {
+  id: string;
+  name: string;
+  supabase_url: string;
+  supabase_anon_key: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export const adminApi = {
   auth: {
     async login(username: string, password: string): Promise<boolean> {
@@ -152,5 +162,65 @@ export const adminApi = {
 
       if (error) throw error;
     },
+  },
+
+  async getDatabaseConfigs(): Promise<DatabaseConfig[]> {
+    const { data, error } = await supabase
+      .from('database_configs')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async createDatabaseConfig(config: Omit<DatabaseConfig, 'id' | 'created_at' | 'updated_at' | 'is_active'>): Promise<DatabaseConfig> {
+    const { data, error } = await supabase
+      .from('database_configs')
+      .insert({ ...config, is_active: false })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async setActiveDatabaseConfig(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('database_configs')
+      .update({ is_active: true, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    const config = await supabase
+      .from('database_configs')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (config.data) {
+      localStorage.setItem('active_db_config', JSON.stringify(config.data));
+    }
+  },
+
+  async deleteDatabaseConfig(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('database_configs')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
+  async getActiveDatabaseConfig(): Promise<DatabaseConfig | null> {
+    const { data, error } = await supabase
+      .from('database_configs')
+      .select('*')
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
   },
 };
