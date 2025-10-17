@@ -21,15 +21,11 @@ export const uploadImage = async (
   if (!response.ok) {
     let errorMessage = 'Resim yükleme başarısız';
     try {
-      const text = await response.text();
-      try {
-        const error = JSON.parse(text);
-        errorMessage = error.message || error.error || errorMessage;
-      } catch {
-        errorMessage = text || errorMessage;
-      }
+      const error = await response.json();
+      errorMessage = error.message || errorMessage;
     } catch (e) {
-      errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      const text = await response.text();
+      errorMessage = text || errorMessage;
     }
     throw new Error(errorMessage);
   }
