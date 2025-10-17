@@ -15,8 +15,8 @@ type Tab = 'settings' | 'categories' | 'products' | 'bulk-import';
 export function Dashboard({ onLogout }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<Tab>('settings');
 
-  const handleLogout = () => {
-    adminApi.auth.logout();
+  const handleLogout = async () => {
+    await adminApi.auth.logout();
     onLogout();
   };
 

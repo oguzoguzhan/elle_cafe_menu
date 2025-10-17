@@ -37,8 +37,9 @@ function App() {
     }
   };
 
-  const checkAdminAuth = () => {
-    setIsAdminAuthenticated(adminApi.auth.isAuthenticated());
+  const checkAdminAuth = async () => {
+    const isAuth = await adminApi.auth.isAuthenticated();
+    setIsAdminAuthenticated(isAuth);
   };
 
   useEffect(() => {

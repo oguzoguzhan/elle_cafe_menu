@@ -80,8 +80,9 @@ export function Login({ onLogin }: LoginProps) {
         </form>
 
         <div className="mt-6 text-sm text-gray-600 text-center">
-          <p>Varsayılan hesap:</p>
-          <p>Kullanıcı: admin / Şifre: 123456</p>
+          <p>Admin giriş bilgileri:</p>
+          <p>Kullanıcı: <strong>admin</strong></p>
+          <p>Şifre: <strong>123456</strong></p>
         </div>
       </div>
     </div>

@@ -5,33 +5,29 @@ const ADMIN_SESSION_KEY = 'admin_session';
 export const adminApi = {
   auth: {
     async login(username: string, password: string): Promise<boolean> {
-      const { data: admin, error } = await supabase
-        .from('admins')
-        .select('*')
-        .eq('username', username)
-        .maybeSingle();
+      const email = `${username}@admin.local`;
 
-      if (error || !admin) {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
         return false;
       }
 
-      const bcrypt = await import('bcryptjs');
-      const isValid = await bcrypt.compare(password, admin.password_hash);
-
-      if (isValid) {
-        sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({ username, id: admin.id }));
-        return true;
-      }
-
-      return false;
+      sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({ username }));
+      return true;
     },
 
-    logout() {
+    async logout() {
+      await supabase.auth.signOut();
       sessionStorage.removeItem(ADMIN_SESSION_KEY);
     },
 
-    isAuthenticated(): boolean {
-      return !!sessionStorage.getItem(ADMIN_SESSION_KEY);
+    async isAuthenticated(): Promise<boolean> {
+      const { data } = await supabase.auth.getSession();
+      return !!data.session && !!sessionStorage.getItem(ADMIN_SESSION_KEY);
     },
   },
 
