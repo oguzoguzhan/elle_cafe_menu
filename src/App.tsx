@@ -7,7 +7,7 @@ import { Dashboard } from './pages/admin/Dashboard';
 import { Settings, Branch } from './lib/supabase';
 import { api } from './lib/api';
 import { adminApi } from './lib/adminApi';
-import { detectBranchFromHostname } from './lib/branchDetection';
+import { detectBranchFromHostname, hasSubdomain } from './lib/branchDetection';
 
 type View = 'landing' | 'categories' | 'products' | 'admin-login' | 'admin-dashboard';
 
@@ -19,6 +19,7 @@ function App() {
   const [breadcrumb, setBreadcrumb] = useState<Array<{ id: string | null; name: string }>>([]);
   const [categoryBreadcrumb, setCategoryBreadcrumb] = useState<Array<{ id: string | null; name: string }>>([{ id: null, name: 'Ana Kategoriler' }]);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [branchNotFound, setBranchNotFound] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -52,8 +53,15 @@ function App() {
 
   const detectBranch = async () => {
     try {
+      const hasSubdomainInUrl = hasSubdomain();
       const branch = await detectBranchFromHostname();
-      setCurrentBranch(branch);
+
+      if (hasSubdomainInUrl && !branch) {
+        setBranchNotFound(true);
+      } else {
+        setBranchNotFound(false);
+        setCurrentBranch(branch);
+      }
     } catch (error) {
       console.error('Error detecting branch:', error);
     }
@@ -132,6 +140,17 @@ function App() {
       return <Login onLogin={handleAdminLogin} />;
     }
     return <Dashboard onLogout={handleAdminLogout} />;
+  }
+
+  if (branchNotFound) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="text-red-600 text-xl font-semibold mb-2">Şube Bulunamadı</div>
+          <div className="text-gray-600">Girdiğiniz adres geçerli bir şube adresi değil.</div>
+        </div>
+      </div>
+    );
   }
 
   if (!settings) {
