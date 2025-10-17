@@ -84,14 +84,22 @@ export function Categories({ settings, branchId, breadcrumb, onCategorySelect, o
     }
   };
 
-  const handleBreadcrumbClick = (index: number) => {
+  const handleBreadcrumbClick = async (index: number) => {
     // Validate index
     if (typeof index !== 'number' || index < 0 || index >= breadcrumb.length) {
       console.error('Invalid breadcrumb index');
       return;
     }
+
+    if (index === breadcrumb.length - 1) {
+      return;
+    }
+
     const newBreadcrumb = breadcrumb.slice(0, index + 1);
     onBreadcrumbUpdate(newBreadcrumb);
+
+    const parentId = newBreadcrumb[newBreadcrumb.length - 1].id;
+    await loadCategories(parentId);
   };
 
   const handleBack = () => {
