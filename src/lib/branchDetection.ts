@@ -27,15 +27,3 @@ export async function detectBranchFromHostname(): Promise<Branch | null> {
 
   return data;
 }
-
-export function hasSubdomain(): boolean {
-  const hostname = window.location.hostname;
-  const parts = hostname.split('.');
-
-  if (parts.length < 3) {
-    return false;
-  }
-
-  const subdomain = parts[0];
-  return subdomain !== 'localhost' && subdomain !== 'www';
-}
