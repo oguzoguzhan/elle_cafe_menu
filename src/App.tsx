@@ -29,6 +29,25 @@ function App() {
     if (path === '/admin' || path === '/admin/') {
       setView('admin-login');
     }
+
+    const handlePopState = () => {
+      const state = window.history.state;
+      if (state) {
+        setView(state.view);
+        if (state.categoryBreadcrumb) {
+          setCategoryBreadcrumb(state.categoryBreadcrumb);
+        }
+        if (state.selectedCategoryId) {
+          setSelectedCategoryId(state.selectedCategoryId);
+        }
+        if (state.breadcrumb) {
+          setBreadcrumb(state.breadcrumb);
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   const detectBranch = async () => {
@@ -61,24 +80,41 @@ function App() {
   }, [view, isAdminAuthenticated]);
 
   const handleEnterMenu = () => {
-    setCategoryBreadcrumb([{ id: null, name: 'Ana Kategoriler' }]);
+    const newBreadcrumb = [{ id: null, name: 'Ana Kategoriler' }];
+    setCategoryBreadcrumb(newBreadcrumb);
     setView('categories');
+    window.history.pushState(
+      { view: 'categories', categoryBreadcrumb: newBreadcrumb },
+      '',
+      ''
+    );
   };
 
   const handleCategorySelect = (categoryId: string, breadcrumb: Array<{ id: string | null; name: string }>) => {
     setSelectedCategoryId(categoryId);
     setBreadcrumb(breadcrumb);
     setView('products');
+    window.history.pushState(
+      { view: 'products', selectedCategoryId: categoryId, breadcrumb },
+      '',
+      ''
+    );
   };
 
 
   const handleBreadcrumbClick = (clickedBreadcrumb: Array<{ id: string | null; name: string }>) => {
     setCategoryBreadcrumb(clickedBreadcrumb);
     setView('categories');
+    window.history.pushState(
+      { view: 'categories', categoryBreadcrumb: clickedBreadcrumb },
+      '',
+      ''
+    );
   };
 
   const handleLogoClick = () => {
     setView('landing');
+    window.history.pushState({ view: 'landing' }, '', '/');
   };
 
   const handleAdminLogin = () => {
