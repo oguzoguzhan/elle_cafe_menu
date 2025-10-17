@@ -1,4 +1,4 @@
-import { supabase, Settings, Category, Product } from './supabase';
+import { supabase, Settings, Category, Product, Branch } from './supabase';
 
 const ADMIN_SESSION_KEY = 'admin_session';
 
@@ -52,6 +52,50 @@ export const adminApi = {
     },
   },
 
+  branches: {
+    async getAll(): Promise<Branch[]> {
+      const { data, error } = await supabase
+        .from('branches')
+        .select('*')
+        .order('sort_order', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    },
+
+    async create(branch: Omit<Branch, 'id' | 'created_at'>): Promise<Branch> {
+      const { data, error } = await supabase
+        .from('branches')
+        .insert(branch)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+
+    async update(id: string, updates: Partial<Branch>): Promise<Branch> {
+      const { data, error } = await supabase
+        .from('branches')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+
+    async delete(id: string): Promise<void> {
+      const { error } = await supabase
+        .from('branches')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+  },
+
   categories: {
     async getAll(includeInactive = true): Promise<Category[]> {
       let query = supabase
@@ -65,29 +109,76 @@ export const adminApi = {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+
+      const categories = data || [];
+
+      for (const category of categories) {
+        const { data: branchData } = await supabase
+          .from('category_branches')
+          .select('branch_id')
+          .eq('category_id', category.id);
+
+        category.branch_ids = branchData?.map(cb => cb.branch_id) || [];
+      }
+
+      return categories;
     },
 
-    async create(category: Omit<Category, 'id' | 'created_at' | 'updated_at'>): Promise<Category> {
+    async create(category: Omit<Category, 'id' | 'created_at' | 'updated_at'>, branchIds: string[]): Promise<Category> {
+      const { branch_ids, ...categoryData } = category;
+
       const { data, error } = await supabase
         .from('categories')
-        .insert(category)
+        .insert(categoryData)
         .select()
         .single();
 
       if (error) throw error;
+
+      if (branchIds.length > 0) {
+        const branchEntries = branchIds.map(branch_id => ({
+          category_id: data.id,
+          branch_id,
+        }));
+
+        await supabase
+          .from('category_branches')
+          .insert(branchEntries);
+      }
+
       return data;
     },
 
-    async update(id: string, updates: Partial<Category>): Promise<Category> {
+    async update(id: string, updates: Partial<Category>, branchIds?: string[]): Promise<Category> {
+      const { branch_ids, ...categoryUpdates } = updates;
+
       const { data, error } = await supabase
         .from('categories')
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .update({ ...categoryUpdates, updated_at: new Date().toISOString() })
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
+
+      if (branchIds !== undefined) {
+        await supabase
+          .from('category_branches')
+          .delete()
+          .eq('category_id', id);
+
+        if (branchIds.length > 0) {
+          const branchEntries = branchIds.map(branch_id => ({
+            category_id: id,
+            branch_id,
+          }));
+
+          await supabase
+            .from('category_branches')
+            .insert(branchEntries);
+        }
+      }
+
       return data;
     },
 
