@@ -114,7 +114,6 @@ export function Products({ categoryId, breadcrumb, settings, branchId, onBreadcr
         onLogoClick={onLogoClick}
         showBackButton={true}
         onBackClick={handleBack}
-        showLanguageSelector={false}
       />
 
       <div className="shadow-sm" style={{ backgroundColor: settings.nav_bg_color }}>
@@ -124,12 +123,8 @@ export function Products({ categoryId, breadcrumb, settings, branchId, onBreadcr
               <div key={index} className="flex items-center gap-2 whitespace-nowrap">
                 {index > 0 && <span style={{ color: settings.nav_text_color, opacity: 0.5 }}>/</span>}
                 <button
-                  onClick={() => {
-                    if (index < breadcrumb.length - 1) {
-                      onBreadcrumbClick(breadcrumb.slice(0, index + 1));
-                    }
-                  }}
-                  className={index < breadcrumb.length - 1 ? 'hover:underline' : ''}
+                  onClick={index === breadcrumb.length - 1 ? undefined : () => onBreadcrumbClick(breadcrumb.slice(0, index + 1))}
+                  disabled={index === breadcrumb.length - 1}
                   style={{
                     fontSize: `${settings.nav_font_size}px`,
                     color: settings.nav_text_color,

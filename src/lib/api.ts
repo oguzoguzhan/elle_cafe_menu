@@ -32,14 +32,7 @@ export const api = {
 
       let categories = data || [];
 
-      console.log('Categories fetched:', categories.length, 'ParentId:', parentId, 'BranchId:', branchId);
-
-      if (!branchId) {
-        console.log('No branchId, returning all categories');
-        return categories;
-      }
-
-      if (categories.length > 0) {
+      if (branchId && categories.length > 0) {
         const categoryIds = categories.map(c => c.id);
         const { data: branchData } = await supabase
           .from('category_branches')
@@ -63,8 +56,6 @@ export const api = {
         categories = categories.filter(cat =>
           !categoriesWithBranches.has(cat.id) || branchCategoryIds.has(cat.id)
         );
-
-        console.log('After branch filtering:', categories.length);
       }
 
       return categories;
@@ -96,14 +87,7 @@ export const api = {
 
       let products = data || [];
 
-      console.log('Products fetched for category:', categoryId, 'Count:', products.length, 'BranchId:', branchId);
-
-      if (!branchId) {
-        console.log('No branchId, returning all products');
-        return products;
-      }
-
-      if (products.length > 0) {
+      if (branchId && products.length > 0) {
         const productIds = products.map(p => p.id);
         const { data: branchData } = await supabase
           .from('product_branches')
@@ -123,8 +107,6 @@ export const api = {
         products = products.filter(prod =>
           !productsWithBranches.has(prod.id) || branchProductIds.has(prod.id)
         );
-
-        console.log('After branch filtering:', products.length);
       }
 
       return products;

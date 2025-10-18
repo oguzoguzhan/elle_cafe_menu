@@ -1,18 +1,17 @@
 import { useState } from 'react';
-import { LogOut, Settings, FolderTree, Package, FileSpreadsheet, Building2, User } from 'lucide-react';
+import { LogOut, Settings, FolderTree, Package, FileSpreadsheet, Building2 } from 'lucide-react';
 import { adminApi } from '../../lib/adminApi';
 import { SettingsPage } from './SettingsPage';
 import { CategoriesPage } from './CategoriesPage';
 import { ProductsPage } from './ProductsPage';
 import { BulkImportPage } from './BulkImportPage';
 import { BranchesPage } from './BranchesPage';
-import { ProfilePage } from './ProfilePage';
 
 interface DashboardProps {
   onLogout: () => void;
 }
 
-type Tab = 'settings' | 'branches' | 'categories' | 'products' | 'bulk-import' | 'profile';
+type Tab = 'settings' | 'branches' | 'categories' | 'products' | 'bulk-import';
 
 export function Dashboard({ onLogout }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<Tab>('settings');
@@ -97,17 +96,6 @@ export function Dashboard({ onLogout }: DashboardProps) {
               <FileSpreadsheet className="w-5 h-5" />
               Toplu İşlem
             </button>
-            <button
-              onClick={() => setActiveTab('profile')}
-              className={`flex items-center gap-2 px-6 py-4 font-medium ${
-                activeTab === 'profile'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <User className="w-5 h-5" />
-              Profil
-            </button>
           </div>
         </div>
 
@@ -117,7 +105,6 @@ export function Dashboard({ onLogout }: DashboardProps) {
           {activeTab === 'categories' && <CategoriesPage />}
           {activeTab === 'products' && <ProductsPage />}
           {activeTab === 'bulk-import' && <BulkImportPage />}
-          {activeTab === 'profile' && <ProfilePage />}
         </div>
       </div>
     </div>

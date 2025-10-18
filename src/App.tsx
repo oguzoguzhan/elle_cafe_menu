@@ -94,9 +94,6 @@ function App() {
     try {
       const data = await api.settings.get();
       setSettings(data);
-      if (data.site_title) {
-        document.title = data.site_title;
-      }
     } catch (error) {
       console.error('Error loading settings:', error);
     }
@@ -141,11 +138,8 @@ function App() {
     setCategoryBreadcrumb(updatedBreadcrumb);
   };
 
-  const handleProductBreadcrumbClick = (clickedBreadcrumb: Array<{ id: string | null; name: string }>) => {
-    setCategoryBreadcrumb(clickedBreadcrumb);
-    setView('categories');
-    const state: HistoryState = { view: 'categories', categoryBreadcrumb: clickedBreadcrumb };
-    window.history.pushState(state, '', '');
+  const handleProductBreadcrumbUpdate = (updatedBreadcrumb: Array<{ id: string | null; name: string }>) => {
+    setBreadcrumb(updatedBreadcrumb);
   };
 
   const handleLogoClick = () => {
@@ -188,7 +182,7 @@ function App() {
   }
 
   if (view === 'products') {
-    return <Products categoryId={selectedCategoryId} breadcrumb={breadcrumb} settings={settings} branchId={currentBranch?.id || null} onBreadcrumbClick={handleProductBreadcrumbClick} onLogoClick={handleLogoClick} />;
+    return <Products categoryId={selectedCategoryId} breadcrumb={breadcrumb} settings={settings} branchId={currentBranch?.id || null} onBreadcrumbClick={handleProductBreadcrumbUpdate} onLogoClick={handleLogoClick} />;
   }
 
   return null;
