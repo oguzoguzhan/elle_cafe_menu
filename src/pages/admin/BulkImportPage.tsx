@@ -56,8 +56,10 @@ export function BulkImportPage() {
         return {
           'ID': product.id,
           'Kategori': parentCategory?.name_tr || category?.name_tr || '',
+          'Kategori (EN)': parentCategory?.name_en || category?.name_en || '',
           'Kategori Şubeler': parentCategoryBranchesStr || categoryBranchesStr,
           'Alt Kategori': parentCategory ? category?.name_tr : '',
+          'Alt Kategori (EN)': parentCategory ? (category?.name_en || '') : '',
           'Alt Kategori Şubeler': parentCategory ? categoryBranchesStr : '',
           'Ürün Adı (TR)': product.name_tr,
           'Ürün Adı (EN)': product.name_en || '',
@@ -83,7 +85,9 @@ export function BulkImportPage() {
       const colWidths = [
         { wch: 36 },
         { wch: 20 },
+        { wch: 20 },
         { wch: 30 },
+        { wch: 20 },
         { wch: 20 },
         { wch: 30 },
         { wch: 30 },
@@ -153,8 +157,10 @@ export function BulkImportPage() {
       for (const row of jsonData) {
         try {
           const mainCategoryName = (row['Kategori'] || '').toString().trim();
+          const mainCategoryNameEn = (row['Kategori (EN)'] || '').toString().trim() || null;
           const mainCategoryBranchesStr = (row['Kategori Şubeler'] || '').toString().trim();
           const subCategoryName = (row['Alt Kategori'] || '').toString().trim();
+          const subCategoryNameEn = (row['Alt Kategori (EN)'] || '').toString().trim() || null;
           const subCategoryBranchesStr = (row['Alt Kategori Şubeler'] || '').toString().trim();
 
           if (!mainCategoryName || !row['Ürün Adı (TR)']) {
@@ -169,7 +175,7 @@ export function BulkImportPage() {
           if (!targetCategory) {
             targetCategory = await adminApi.categories.create({
               name_tr: mainCategoryName,
-              name_en: null,
+              name_en: mainCategoryNameEn,
               image_url: null,
               parent_id: null,
               sort_order: categories.length + 1,
@@ -206,7 +212,7 @@ export function BulkImportPage() {
             if (!subCategory) {
               subCategory = await adminApi.categories.create({
                 name_tr: subCategoryName,
-                name_en: null,
+                name_en: subCategoryNameEn,
                 image_url: null,
                 parent_id: targetCategory.id,
                 sort_order: categories.length + 1,
@@ -392,8 +398,10 @@ export function BulkImportPage() {
             <ul className="list-disc list-inside space-y-1">
               <li>ID (güncellemeler için, yeni kayıtlarda boş bırakın)</li>
               <li>Kategori (zorunlu) - Ana kategori adı (Türkçe)</li>
+              <li>Kategori (EN) (opsiyonel) - Ana kategori adı (İngilizce)</li>
               <li>Kategori Şubeler (opsiyonel) - Ana kategorinin şubeleri</li>
               <li>Alt Kategori (opsiyonel) - Alt kategori varsa</li>
+              <li>Alt Kategori (EN) (opsiyonel) - Alt kategori adı (İngilizce)</li>
               <li>Alt Kategori Şubeler (opsiyonel) - Alt kategorinin şubeleri</li>
               <li>Ürün Adı (TR) (zorunlu)</li>
               <li>Ürün Adı (EN) (opsiyonel)</li>
