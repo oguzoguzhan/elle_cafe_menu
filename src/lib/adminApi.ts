@@ -71,6 +71,32 @@ export const adminApi = {
         return { success: false, error: 'Bir hata oluştu' };
       }
     },
+
+    async changeUsername(newUsername: string): Promise<{ success: boolean; error?: string }> {
+      try {
+        const session = sessionStorage.getItem(ADMIN_SESSION_KEY);
+        if (!session) {
+          return { success: false, error: 'Oturum bulunamadı' };
+        }
+
+        const { username: oldUsername } = JSON.parse(session);
+        const oldEmail = `${oldUsername}@admin.local`;
+        const newEmail = `${newUsername}@admin.local`;
+
+        const { error: updateError } = await supabase.auth.updateUser({
+          email: newEmail,
+        });
+
+        if (updateError) {
+          return { success: false, error: 'Kullanıcı adı değiştirilemedi' };
+        }
+
+        sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({ username: newUsername }));
+        return { success: true };
+      } catch (error) {
+        return { success: false, error: 'Bir hata oluştu' };
+      }
+    },
   },
 
   settings: {

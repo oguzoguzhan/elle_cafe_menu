@@ -11,11 +11,6 @@ export function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordMessage, setPasswordMessage] = useState('');
-  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -104,40 +99,6 @@ export function SettingsPage() {
     }
   };
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPasswordMessage('');
-
-    if (newPassword !== confirmPassword) {
-      setPasswordMessage('Şifreler eşleşmiyor');
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      setPasswordMessage('Yeni şifre en az 6 karakter olmalı');
-      return;
-    }
-
-    setChangingPassword(true);
-
-    try {
-      const result = await adminApi.auth.changePassword(currentPassword, newPassword);
-
-      if (result.success) {
-        setPasswordMessage('Şifre başarıyla değiştirildi');
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-        setTimeout(() => setPasswordMessage(''), 3000);
-      } else {
-        setPasswordMessage(result.error || 'Şifre değiştirilemedi');
-      }
-    } catch (error) {
-      setPasswordMessage('Bir hata oluştu');
-    } finally {
-      setChangingPassword(false);
-    }
-  };
 
   if (loading) {
     return <div className="text-center py-12">Yükleniyor...</div>;
@@ -827,67 +788,6 @@ export function SettingsPage() {
         {saving ? 'Kaydediliyor...' : 'Kaydet'}
       </button>
     </form>
-
-    <div className="mt-8 pt-8 border-t border-gray-200">
-      <h2 className="text-xl font-bold text-gray-900 mb-4">Şifre Değiştir</h2>
-
-      <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Mevcut Şifre
-          </label>
-          <input
-            type="password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Yeni Şifre
-          </label>
-          <input
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-            required
-            minLength={6}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Yeni Şifre (Tekrar)
-          </label>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-            required
-            minLength={6}
-          />
-        </div>
-
-        {passwordMessage && (
-          <div className={`p-4 rounded-lg ${passwordMessage.includes('başarıyla') ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
-            {passwordMessage}
-          </div>
-        )}
-
-        <button
-          type="submit"
-          disabled={changingPassword}
-          className="w-full bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 disabled:bg-gray-400 transition-colors"
-        >
-          {changingPassword ? 'Şifre Değiştiriliyor...' : 'Şifre Değiştir'}
-        </button>
-      </form>
-    </div>
   </>
   );
 }

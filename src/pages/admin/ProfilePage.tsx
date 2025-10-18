@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { Eye, EyeOff, Lock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Eye, EyeOff, Lock, User } from 'lucide-react';
 import { adminApi } from '../../lib/adminApi';
 
 export function ProfilePage() {
+  const [username, setUsername] = useState('');
+  const [newUsername, setNewUsername] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -10,9 +12,46 @@ export function ProfilePage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [usernameMessage, setUsernameMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [usernameLoading, setUsernameLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    const session = sessionStorage.getItem('admin_session');
+    if (session) {
+      const { username: currentUsername } = JSON.parse(session);
+      setUsername(currentUsername);
+      setNewUsername(currentUsername);
+    }
+  }, []);
+
+  const handleUsernameSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUsernameMessage(null);
+
+    if (newUsername.trim().length < 3) {
+      setUsernameMessage({ type: 'error', text: 'Kullanıcı adı en az 3 karakter olmalıdır' });
+      return;
+    }
+
+    setUsernameLoading(true);
+    try {
+      const result = await adminApi.auth.changeUsername(newUsername);
+
+      if (result.success) {
+        setUsernameMessage({ type: 'success', text: 'Kullanıcı adı başarıyla değiştirildi' });
+        setUsername(newUsername);
+      } else {
+        setUsernameMessage({ type: 'error', text: result.error || 'Kullanıcı adı değiştirilemedi' });
+      }
+    } catch (error) {
+      setUsernameMessage({ type: 'error', text: 'Bir hata oluştu' });
+    } finally {
+      setUsernameLoading(false);
+    }
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
 
@@ -46,13 +85,70 @@ export function ProfilePage() {
   };
 
   return (
-    <div className="max-w-2xl">
-      <div className="flex items-center gap-3 mb-6">
-        <Lock className="w-6 h-6 text-gray-700" />
-        <h2 className="text-2xl font-bold text-gray-900">Profil Ayarları</h2>
+    <div className="max-w-2xl space-y-8">
+      <div>
+        <div className="flex items-center gap-3 mb-6">
+          <User className="w-6 h-6 text-gray-700" />
+          <h2 className="text-2xl font-bold text-gray-900">Kullanıcı Adı</h2>
+        </div>
+
+        <form onSubmit={handleUsernameSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Mevcut Kullanıcı Adı
+            </label>
+            <input
+              type="text"
+              value={username}
+              disabled
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Yeni Kullanıcı Adı
+            </label>
+            <input
+              type="text"
+              value={newUsername}
+              onChange={(e) => setNewUsername(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+              minLength={3}
+            />
+            <p className="text-sm text-gray-500 mt-1">En az 3 karakter olmalıdır</p>
+          </div>
+
+          {usernameMessage && (
+            <div
+              className={`p-4 rounded-lg ${
+                usernameMessage.type === 'success'
+                  ? 'bg-green-50 text-green-800 border border-green-200'
+                  : 'bg-red-50 text-red-800 border border-red-200'
+              }`}
+            >
+              {usernameMessage.text}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={usernameLoading || newUsername === username}
+            className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+          >
+            {usernameLoading ? 'Kaydediliyor...' : 'Kullanıcı Adını Değiştir'}
+          </button>
+        </form>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="border-t pt-8">
+        <div className="flex items-center gap-3 mb-6">
+          <Lock className="w-6 h-6 text-gray-700" />
+          <h2 className="text-2xl font-bold text-gray-900">Şifre Değiştir</h2>
+        </div>
+
+        <form onSubmit={handlePasswordSubmit} className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Mevcut Şifre
@@ -142,6 +238,7 @@ export function ProfilePage() {
           {loading ? 'Kaydediliyor...' : 'Şifreyi Değiştir'}
         </button>
       </form>
+      </div>
     </div>
   );
 }
