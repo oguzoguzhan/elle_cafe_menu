@@ -1,7 +1,6 @@
 import { ArrowLeft } from 'lucide-react';
 import { Settings } from '../lib/supabase';
 import { useLanguage } from '../lib/languageContext';
-import { LanguageSelector } from './LanguageSelector';
 
 interface HeaderProps {
   settings: Settings;
@@ -35,10 +34,6 @@ export function Header({ settings, onLogoClick, showBackButton = false, onBackCl
           <span style={{ fontSize: `${settings.nav_font_size}px` }}>{backButtonText}</span>
         </button>
       )}
-
-      <div className="absolute right-4">
-        <LanguageSelector />
-      </div>
 
       {settings.header_logo_url ? (
         <button onClick={onLogoClick} className="focus:outline-none">
