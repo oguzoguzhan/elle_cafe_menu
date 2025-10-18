@@ -266,10 +266,14 @@ export function BulkImportPage() {
           const productBranchNames = productBranchesStr ? productBranchesStr.split(',').map((b: string) => b.trim()).filter(Boolean) : [];
           const productBranchIds = productBranchNames.map((name: string) => branchMap.get(name.toLowerCase())?.id).filter(Boolean);
 
+          const nameTr = row['Ürün Adı (TR)']?.toString().trim() || '';
+          const nameEn = row['Ürün Adı (EN)']?.toString().trim() || null;
+
           const productData = {
             category_id: categoryId,
-            name_tr: row['Ürün Adı (TR)'].toString().trim(),
-            name_en: row['Ürün Adı (EN)'] ? row['Ürün Adı (EN)'].toString().trim() : null,
+            name: nameTr,
+            name_tr: nameTr,
+            name_en: nameEn,
             description_tr: row['Açıklama (TR)'] ? row['Açıklama (TR)'].toString() : null,
             description_en: row['Açıklama (EN)'] ? row['Açıklama (EN)'].toString() : null,
             warning_tr: row['Uyarı (TR)'] ? row['Uyarı (TR)'].toString() : null,
