@@ -11,6 +11,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export type Settings = {
   id: string;
+  site_title: string;
   bg_color: string;
   logo_url: string | null;
   logo_width: number;

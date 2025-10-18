@@ -112,6 +112,26 @@ export function SettingsPage() {
     <>
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Genel Ayarlar</h2>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Site Başlığı
+            </label>
+            <input
+              type="text"
+              value={settings.site_title}
+              onChange={(e) => setSettings({ ...settings, site_title: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              placeholder="Dijital Menü"
+            />
+            <p className="text-sm text-gray-500 mt-1">Tarayıcı sekmesinde görünecek başlık</p>
+          </div>
+        </div>
+      </div>
+
+      <div>
         <h2 className="text-xl font-bold text-gray-900 mb-4">Giriş Sayfası Ayarları</h2>
 
         <div className="space-y-4">
