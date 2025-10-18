@@ -73,25 +73,37 @@ export function Categories({ settings, branchId, breadcrumb, onCategorySelect, o
       return;
     }
 
-    const hasSubcategories = await api.categories.hasSubcategories(category.id);
     const displayName = language === 'en' && category.name_en ? category.name_en : category.name_tr;
+    const hasSubcategories = await api.categories.hasSubcategories(category.id);
+
+    console.log('Category clicked:', displayName, 'Has subcategories:', hasSubcategories);
 
     if (hasSubcategories) {
-      onBreadcrumbUpdate([...breadcrumb, { id: category.id, name: displayName }]);
+      const newBreadcrumb = [...breadcrumb, { id: category.id, name: displayName }];
+      onBreadcrumbUpdate(newBreadcrumb);
+      await loadCategories(category.id);
     } else {
       const productBreadcrumb = [...breadcrumb, { id: category.id, name: displayName }];
       onCategorySelect(category.id, productBreadcrumb);
     }
   };
 
-  const handleBreadcrumbClick = (index: number) => {
+  const handleBreadcrumbClick = async (index: number) => {
     // Validate index
     if (typeof index !== 'number' || index < 0 || index >= breadcrumb.length) {
       console.error('Invalid breadcrumb index');
       return;
     }
+
+    if (index === breadcrumb.length - 1) {
+      return;
+    }
+
     const newBreadcrumb = breadcrumb.slice(0, index + 1);
     onBreadcrumbUpdate(newBreadcrumb);
+
+    const parentId = newBreadcrumb[newBreadcrumb.length - 1].id;
+    await loadCategories(parentId);
   };
 
   const handleBack = () => {
@@ -114,6 +126,7 @@ export function Categories({ settings, branchId, breadcrumb, onCategorySelect, o
         onLogoClick={onLogoClick}
         showBackButton={isSubcategory}
         onBackClick={handleBack}
+        showLanguageSelector={false}
       />
 
       <div className="shadow-sm" style={{ backgroundColor: settings.nav_bg_color }}>

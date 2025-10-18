@@ -48,6 +48,8 @@ export type Settings = {
   product_price_font_size: number;
   back_button_bg_color: string;
   back_button_text_color: string;
+  language_bar_bg_color: string;
+  site_title: string;
   default_language: 'tr' | 'en';
   updated_at: string;
 };
