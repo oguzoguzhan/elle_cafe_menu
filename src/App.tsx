@@ -127,15 +127,15 @@ function App() {
   };
 
 
-  const handleBreadcrumbClick = (clickedBreadcrumb: Array<{ id: string | null; name: string }>) => {
+  const handleCategoryBreadcrumbUpdate = (updatedBreadcrumb: Array<{ id: string | null; name: string }>) => {
+    setCategoryBreadcrumb(updatedBreadcrumb);
+  };
+
+  const handleProductBreadcrumbClick = (clickedBreadcrumb: Array<{ id: string | null; name: string }>) => {
     setCategoryBreadcrumb(clickedBreadcrumb);
     setView('categories');
     const state: HistoryState = { view: 'categories', categoryBreadcrumb: clickedBreadcrumb };
     window.history.pushState(state, '', '');
-  };
-
-  const handleBreadcrumbUpdate = (updatedBreadcrumb: Array<{ id: string | null; name: string }>) => {
-    setCategoryBreadcrumb(updatedBreadcrumb);
   };
 
   const handleProductBreadcrumbUpdate = (updatedBreadcrumb: Array<{ id: string | null; name: string }>) => {
@@ -178,11 +178,11 @@ function App() {
   }
 
   if (view === 'categories') {
-    return <Categories settings={settings} branchId={currentBranch?.id || null} breadcrumb={categoryBreadcrumb} onCategorySelect={handleCategorySelect} onBreadcrumbUpdate={handleBreadcrumbUpdate} onLogoClick={handleLogoClick} />;
+    return <Categories settings={settings} branchId={currentBranch?.id || null} breadcrumb={categoryBreadcrumb} onCategorySelect={handleCategorySelect} onBreadcrumbUpdate={handleCategoryBreadcrumbUpdate} onLogoClick={handleLogoClick} />;
   }
 
   if (view === 'products') {
-    return <Products categoryId={selectedCategoryId} breadcrumb={breadcrumb} settings={settings} branchId={currentBranch?.id || null} onBreadcrumbClick={handleProductBreadcrumbUpdate} onLogoClick={handleLogoClick} />;
+    return <Products categoryId={selectedCategoryId} breadcrumb={breadcrumb} settings={settings} branchId={currentBranch?.id || null} onBreadcrumbClick={handleProductBreadcrumbClick} onBreadcrumbUpdate={handleProductBreadcrumbUpdate} onLogoClick={handleLogoClick} />;
   }
 
   return null;

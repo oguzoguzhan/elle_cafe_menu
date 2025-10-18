@@ -12,10 +12,11 @@ interface ProductsProps {
   settings: Settings;
   branchId: string | null;
   onBreadcrumbClick: (breadcrumb: Array<{ id: string | null; name: string }>) => void;
+  onBreadcrumbUpdate: (breadcrumb: Array<{ id: string | null; name: string }>) => void;
   onLogoClick: () => void;
 }
 
-export function Products({ categoryId, breadcrumb, settings, branchId, onBreadcrumbClick, onLogoClick }: ProductsProps) {
+export function Products({ categoryId, breadcrumb, settings, branchId, onBreadcrumbClick, onBreadcrumbUpdate, onLogoClick }: ProductsProps) {
   const { language } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -52,7 +53,7 @@ export function Products({ categoryId, breadcrumb, settings, branchId, onBreadcr
         }
       })
     );
-    onBreadcrumbClick(updatedBreadcrumb);
+    onBreadcrumbUpdate(updatedBreadcrumb);
   };
 
   const loadProducts = async () => {
