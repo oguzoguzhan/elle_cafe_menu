@@ -138,13 +138,6 @@ function App() {
     setCategoryBreadcrumb(updatedBreadcrumb);
   };
 
-  const handleProductBreadcrumbClick = (clickedBreadcrumb: Array<{ id: string | null; name: string }>) => {
-    setCategoryBreadcrumb(clickedBreadcrumb);
-    setView('categories');
-    const state: HistoryState = { view: 'categories', categoryBreadcrumb: clickedBreadcrumb };
-    window.history.pushState(state, '', '');
-  };
-
   const handleProductBreadcrumbUpdate = (updatedBreadcrumb: Array<{ id: string | null; name: string }>) => {
     setBreadcrumb(updatedBreadcrumb);
   };
@@ -189,7 +182,7 @@ function App() {
   }
 
   if (view === 'products') {
-    return <Products categoryId={selectedCategoryId} breadcrumb={breadcrumb} settings={settings} branchId={currentBranch?.id || null} onBreadcrumbClick={handleProductBreadcrumbClick} onLogoClick={handleLogoClick} />;
+    return <Products categoryId={selectedCategoryId} breadcrumb={breadcrumb} settings={settings} branchId={currentBranch?.id || null} onBreadcrumbClick={handleProductBreadcrumbUpdate} onLogoClick={handleLogoClick} />;
   }
 
   return null;
