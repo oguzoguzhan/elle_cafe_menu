@@ -70,28 +70,37 @@ export function ProductsPage() {
     try {
       const filters: { categoryId?: string; active?: boolean } = {};
 
-      if (filterCategory) {
-        filters.categoryId = filterCategory;
-      }
-
       if (filterActive === 'active') {
         filters.active = true;
       } else if (filterActive === 'inactive') {
         filters.active = false;
       }
 
-      const productsData = await adminApi.products.getAll(filters);
+      let productsData = await adminApi.products.getAll(filters);
 
-      const { data: branchesData } = await supabase
-        .from('product_branches')
-        .select('product_id, branch_id');
+      if (filterCategory) {
+        const selectedCategory = categories.find(c => c.id === filterCategory);
+        if (selectedCategory) {
+          if (selectedCategory.parent_id === null) {
+            const childCategoryIds = categories
+              .filter(c => c.parent_id === filterCategory)
+              .map(c => c.id);
+            productsData = productsData.filter(p =>
+              p.category_id === filterCategory || childCategoryIds.includes(p.category_id)
+            );
+          } else {
+            productsData = productsData.filter(p => p.category_id === filterCategory);
+          }
+        }
+      }
 
-      const productsWithBranches = productsData.map(prod => ({
-        ...prod,
-        branch_ids: branchesData?.filter(pb => pb.product_id === prod.id).map(pb => pb.branch_id) || []
-      }));
+      if (filterBranch) {
+        productsData = productsData.filter(p =>
+          p.branch_ids && p.branch_ids.includes(filterBranch)
+        );
+      }
 
-      setProducts(productsWithBranches);
+      setProducts(productsData);
     } catch (error) {
       console.error('Error loading products:', error);
     }
@@ -329,6 +338,41 @@ export function ProductsPage() {
     }
   };
 
+  const [showBranchModal, setShowBranchModal] = useState(false);
+  const [bulkBranchSelection, setBulkBranchSelection] = useState<string[]>([]);
+
+  const handleBulkBranchChange = () => {
+    if (selectedProducts.length === 0) {
+      alert('Lütfen en az bir ürün seçin');
+      return;
+    }
+    setBulkBranchSelection([]);
+    setShowBranchModal(true);
+  };
+
+  const handleBulkBranchSubmit = async () => {
+    if (bulkBranchSelection.length === 0) {
+      alert('Lütfen en az bir şube seçin');
+      return;
+    }
+
+    try {
+      await Promise.all(
+        selectedProducts.map(id =>
+          adminApi.products.update(id, {}, bulkBranchSelection)
+        )
+      );
+      await loadData();
+      setSelectedProducts([]);
+      setBulkBranchSelection([]);
+      setShowBranchModal(false);
+      alert(`${selectedProducts.length} ürünün şubeleri başarıyla güncellendi`);
+    } catch (error) {
+      console.error('Bulk branch update error:', error);
+      alert('Toplu şube güncelleme sırasında hata oluştu');
+    }
+  };
+
   const handleBulkDelete = async () => {
     if (selectedProducts.length === 0) {
       alert('Lütfen en az bir ürün seçin');
@@ -398,6 +442,12 @@ export function ProductsPage() {
               Pasif Yap
             </button>
             <button
+              onClick={handleBulkBranchChange}
+              className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700"
+            >
+              Şube Değiştir
+            </button>
+            <button
               onClick={handleBulkDelete}
               className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700"
             >
@@ -413,8 +463,23 @@ export function ProductsPage() {
         </div>
       )}
 
-      <div className="flex gap-4">
-        <div className="flex-1">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Şube
+          </label>
+          <select
+            value={filterBranch}
+            onChange={(e) => setFilterBranch(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+          >
+            <option value="">Tüm Şubeler</option>
+            {branches.map(branch => (
+              <option key={branch.id} value={branch.id}>{branch.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Kategori
           </label>
@@ -424,12 +489,19 @@ export function ProductsPage() {
             className="w-full px-4 py-2 border border-gray-300 rounded-lg"
           >
             <option value="">Tümü</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            {categories.filter(c => c.parent_id === null).map(parent => (
+              <optgroup key={parent.id} label={parent.name_tr}>
+                <option value={parent.id}>{parent.name_tr} (Tüm Alt Kategoriler)</option>
+                {categories.filter(c => c.parent_id === parent.id).map(child => (
+                  <option key={child.id} value={child.id}>
+                    ↳ {child.name_tr}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </div>
-        <div className="flex-1">
+        <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Durum
           </label>
@@ -793,6 +865,59 @@ export function ProductsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showBranchModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900">
+                Şube Seçimi ({selectedProducts.length} ürün)
+              </h3>
+              <button
+                onClick={() => setShowBranchModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-2 mb-6 max-h-64 overflow-y-auto border border-gray-300 rounded-lg p-3">
+              {branches.map((branch) => (
+                <label key={branch.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                  <input
+                    type="checkbox"
+                    checked={bulkBranchSelection.includes(branch.id)}
+                    onChange={() => {
+                      if (bulkBranchSelection.includes(branch.id)) {
+                        setBulkBranchSelection(bulkBranchSelection.filter(id => id !== branch.id));
+                      } else {
+                        setBulkBranchSelection([...bulkBranchSelection, branch.id]);
+                      }
+                    }}
+                    className="w-4 h-4 text-blue-600 rounded"
+                  />
+                  <span className="text-sm">{branch.name}</span>
+                </label>
+              ))}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowBranchModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                İptal
+              </button>
+              <button
+                onClick={handleBulkBranchSubmit}
+                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              >
+                Şubeleri Güncelle
+              </button>
+            </div>
           </div>
         </div>
       )}
