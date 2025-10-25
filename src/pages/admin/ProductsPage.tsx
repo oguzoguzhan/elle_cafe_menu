@@ -18,8 +18,10 @@ export function ProductsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('');
+  const [filterBranch, setFilterBranch] = useState<string>('');
   const [filterActive, setFilterActive] = useState<string>('all');
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
   const [formData, setFormData] = useState<ProductForm>({
     category_id: '',
     name: '',
@@ -47,18 +49,19 @@ export function ProductsPage() {
 
   useEffect(() => {
     loadProducts();
-  }, [filterCategory, filterActive]);
+  }, [filterCategory, filterBranch, filterActive]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [categoriesData, branchesData] = await Promise.all([
+      const [productsData, categoriesData, branchesData] = await Promise.all([
+        adminApi.products.getAll(),
         adminApi.categories.getAll(),
-        supabase.from('branches').select('*').order('sort_order', { ascending: true }),
+        adminApi.branches.getAll(),
       ]);
+      setProducts(productsData);
       setCategories(categoriesData);
-      setBranches(branchesData.data || []);
-      await loadProducts();
+      setBranches(branchesData);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -144,37 +147,11 @@ export function ProductsPage() {
       let productId = editingId;
 
       if (editingId) {
-        await adminApi.products.update(editingId, dataToSave);
+        await adminApi.products.update(editingId, dataToSave, selectedBranches);
       } else {
-        const { data, error } = await supabase
-          .from('products')
-          .insert(dataToSave)
-          .select()
-          .single();
-
-        if (error) throw error;
-        productId = data.id;
+        await adminApi.products.create(dataToSave, selectedBranches);
       }
-
-      if (productId) {
-        await supabase
-          .from('product_branches')
-          .delete()
-          .eq('product_id', productId);
-
-        if (formData.branch_ids.length > 0) {
-          const branchInserts = formData.branch_ids.map(branchId => ({
-            product_id: productId,
-            branch_id: branchId
-          }));
-
-          await supabase
-            .from('product_branches')
-            .insert(branchInserts);
-        }
-      }
-
-      await loadProducts();
+      await loadData();
       handleCloseModal();
     } catch (error) {
       console.error('Error saving product:', error);
@@ -182,7 +159,7 @@ export function ProductsPage() {
     }
   };
 
-  const handleEdit = (product: ProductWithBranches) => {
+  const handleEdit = async (product: ProductWithBranches) => {
     setEditingId(product.id);
     setFormData({
       category_id: product.category_id,
@@ -204,6 +181,7 @@ export function ProductsPage() {
       active: product.active,
       branch_ids: product.branch_ids || [],
     });
+    setSelectedBranches(product.branch_ids || []);
     setShowModal(true);
   };
 
@@ -259,12 +237,19 @@ export function ProductsPage() {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingId(null);
+    setSelectedBranches([]);
     setFormData({
       category_id: '',
       name: '',
+      name_tr: '',
+      name_en: null,
       image_url: null,
       description: null,
+      description_tr: null,
+      description_en: null,
       warning: null,
+      warning_tr: null,
+      warning_en: null,
       price_single: null,
       price_small: null,
       price_medium: null,
@@ -275,18 +260,10 @@ export function ProductsPage() {
     });
   };
 
-  const toggleBranch = (branchId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      branch_ids: prev.branch_ids.includes(branchId)
-        ? prev.branch_ids.filter(id => id !== branchId)
-        : [...prev.branch_ids, branchId]
-    }));
-  };
 
   const getCategoryName = (categoryId: string) => {
     const category = categories.find(c => c.id === categoryId);
-    return category?.name || 'Bilinmeyen';
+    return category?.name_tr || 'Bilinmeyen';
   };
 
   const truncateText = (text: string, maxLength: number = 60) => {
@@ -553,22 +530,18 @@ export function ProductsPage() {
               </div>
             )}
             <div className="p-4">
-              <h3 className="font-semibold text-gray-900 mb-1">{product.name}</h3>
-              <p className="text-sm text-gray-600 mb-2">
+              <h3 className="font-semibold text-gray-900 mb-1">{product.name_tr || product.name}</h3>
+              <p className="text-sm text-gray-600 mb-1">
                 {getCategoryName(product.category_id)}
               </p>
-              <p className="text-sm text-gray-600 mb-2 min-h-[20px] truncate">
-                {product.description || ''}
-              </p>
               {product.branch_ids && product.branch_ids.length > 0 && (
-                <div className="flex flex-wrap gap-1 mb-2">
-                  {product.branch_ids.map(branchId => (
-                    <span key={branchId} className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
-                      {branches.find(b => b.id === branchId)?.name}
-                    </span>
-                  ))}
-                </div>
+                <p className="text-sm text-blue-600 mb-2">
+                  {product.branch_ids.length} Şube
+                </p>
               )}
+              <p className="text-sm text-gray-600 mb-2 min-h-[20px] truncate">
+                {product.description_tr || product.description || ''}
+              </p>
               <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
                 <span>Sıra: {product.sort_order}</span>
                 <span className={product.active ? 'text-green-600' : 'text-red-600'}>
@@ -627,7 +600,7 @@ export function ProductsPage() {
                 >
                   <option value="">Kategori seçin</option>
                   {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    <option key={cat.id} value={cat.id}>{cat.name_tr}</option>
                   ))}
                 </select>
               </div>
@@ -810,8 +783,14 @@ export function ProductsPage() {
                     <label key={branch.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
                       <input
                         type="checkbox"
-                        checked={formData.branch_ids.includes(branch.id)}
-                        onChange={() => toggleBranch(branch.id)}
+                        checked={selectedBranches.includes(branch.id)}
+                        onChange={() => {
+                          if (selectedBranches.includes(branch.id)) {
+                            setSelectedBranches(selectedBranches.filter(id => id !== branch.id));
+                          } else {
+                            setSelectedBranches([...selectedBranches, branch.id]);
+                          }
+                        }}
                         className="w-4 h-4 text-blue-600 rounded"
                       />
                       <span className="text-sm text-gray-900">{branch.name}</span>
