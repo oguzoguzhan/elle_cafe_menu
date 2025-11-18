@@ -161,6 +161,7 @@ export function ProductsPage() {
 
   const handleEdit = async (product: ProductWithBranches) => {
     setEditingId(product.id);
+    setFilterCategory(product.category_id);
     setFormData({
       category_id: product.category_id,
       name: product.name,

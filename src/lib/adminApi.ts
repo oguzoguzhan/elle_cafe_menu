@@ -186,29 +186,76 @@ export const adminApi = {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+
+      const products = data || [];
+
+      for (const product of products) {
+        const { data: branchData } = await supabase
+          .from('product_branches')
+          .select('branch_id')
+          .eq('product_id', product.id);
+
+        product.branch_ids = branchData?.map(pb => pb.branch_id) || [];
+      }
+
+      return products;
     },
 
-    async create(product: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<Product> {
+    async create(product: Omit<Product, 'id' | 'created_at' | 'updated_at'>, branchIds?: string[]): Promise<Product> {
+      const { branch_ids, ...productData } = product;
+
       const { data, error } = await supabase
         .from('products')
-        .insert(product)
+        .insert(productData)
         .select()
         .single();
 
       if (error) throw error;
+
+      if (branchIds && branchIds.length > 0) {
+        const branchEntries = branchIds.map(branch_id => ({
+          product_id: data.id,
+          branch_id,
+        }));
+
+        await supabase
+          .from('product_branches')
+          .insert(branchEntries);
+      }
+
       return data;
     },
 
-    async update(id: string, updates: Partial<Product>): Promise<Product> {
+    async update(id: string, updates: Partial<Product>, branchIds?: string[]): Promise<Product> {
+      const { branch_ids, ...productUpdates } = updates;
+
       const { data, error } = await supabase
         .from('products')
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .update({ ...productUpdates, updated_at: new Date().toISOString() })
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
+
+      if (branchIds !== undefined) {
+        await supabase
+          .from('product_branches')
+          .delete()
+          .eq('product_id', id);
+
+        if (branchIds.length > 0) {
+          const branchEntries = branchIds.map(branch_id => ({
+            product_id: id,
+            branch_id,
+          }));
+
+          await supabase
+            .from('product_branches')
+            .insert(branchEntries);
+        }
+      }
+
       return data;
     },
 
