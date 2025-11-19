@@ -189,13 +189,22 @@ export const adminApi = {
 
       const products = data || [];
 
-      for (const product of products) {
-        const { data: branchData } = await supabase
+      if (products.length > 0) {
+        const { data: allBranchData } = await supabase
           .from('product_branches')
-          .select('branch_id')
-          .eq('product_id', product.id);
+          .select('product_id, branch_id');
 
-        product.branch_ids = branchData?.map(pb => pb.branch_id) || [];
+        const branchMap = new Map<string, string[]>();
+        allBranchData?.forEach(pb => {
+          if (!branchMap.has(pb.product_id)) {
+            branchMap.set(pb.product_id, []);
+          }
+          branchMap.get(pb.product_id)?.push(pb.branch_id);
+        });
+
+        products.forEach(product => {
+          product.branch_ids = branchMap.get(product.id) || [];
+        });
       }
 
       return products;
